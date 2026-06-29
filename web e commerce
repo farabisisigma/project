@@ -1,0 +1,587 @@
+   <!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TokoKu</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,sans-serif;background:#f5f5f5;color:#1a1a1a}
+  .app{min-height:100vh}
+
+  /* NAVBAR */
+  .navbar{background:#3725a0;border-bottom:1px solid #e5e5e5;padding:12px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100}
+  .navbar h1{font-size:18px;font-weight:600;flex:1}
+  .cart-btn{position:relative;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;padding:8px 14px;cursor:pointer;font-size:14px;display:flex;align-items:center;gap:6px}
+  .cart-btn:hover{background:#eee}
+  .cart-count{background:#3b82f6;color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600}
+  .sell-btn{background:#f0fdf4;border:1px solid #86efac;color:#16a34a;border-radius:8px;padding:8px 14px;cursor:pointer;font-size:14px;display:flex;align-items:center;gap:6px}
+  .sell-btn:hover{background:#dcfce7}
+
+  /* LAYOUT */
+  .main{display:flex;min-height:calc(100vh - 57px)}
+  .sidebar{width:220px;min-width:220px;border-right:1px solid #e5e5e5;padding:16px;background:#fff}
+  .sidebar h3{font-size:11px;font-weight:600;color:#888;margin-bottom:12px;text-transform:uppercase;letter-spacing:.06em}
+  .sidebar select,.sidebar input[type=text]{width:100%;margin-bottom:10px;font-size:13px;padding:7px 10px;border-radius:8px;border:1px solid #ddd;background:#f9f9f9;color:#1a1a1a}
+  .sidebar label{font-size:12px;color:#888;display:block;margin-bottom:4px}
+  input[type=range]{width:100%;margin-bottom:6px;accent-color:#3b82f6}
+  #rangeLabel{font-size:12px;color:#888;margin-bottom:12px}
+  .search-bar{flex:1;max-width:360px}
+  .search-bar input{width:100%;padding:8px 12px;border-radius:8px;border:1px solid #ddd;background:#f9f9f9;font-size:14px}
+  .content{flex:1;padding:20px;overflow-y:auto}
+
+  /* TABS */
+  .tab-bar{display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid #e5e5e5}
+  .tab{padding:8px 16px;font-size:14px;cursor:pointer;border-bottom:2px solid transparent;color:#888;margin-bottom:-1px;background:none;border-top:none;border-left:none;border-right:none}
+  .tab.active{color:#3b82f6;border-bottom-color:#3b82f6;font-weight:500}
+
+  /* PRODUCT GRID */
+  .product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+  .product-card{background:#fff;border:1px solid #e5e5e5;border-radius:12px;overflow:hidden;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+  .product-card:hover{border-color:#aaa;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+  .product-img{width:100%;height:140px;display:flex;align-items:center;justify-content:center;font-size:40px;background:#f5f5f5}
+  .product-img img{width:100%;height:100%;object-fit:cover}
+  .product-info{padding:12px}
+  .product-name{font-size:14px;font-weight:500;margin-bottom:4px;line-height:1.3}
+  .product-price{font-size:15px;font-weight:600;color:#3b82f6;margin-bottom:6px}
+  .product-meta{font-size:12px;color:#888;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .stars{color:#f59e0b;font-size:12px}
+  .add-cart-btn{width:100%;padding:7px;border-radius:8px;border:1px solid #93c5fd;background:#eff6ff;color:#3b82f6;font-size:13px;cursor:pointer;font-weight:500}
+  .add-cart-btn:hover{background:#3b82f6;color:#fff}
+
+  /* CART PANEL */
+  .panel{position:fixed;top:0;right:0;bottom:0;width:380px;background:#fff;border-left:1px solid #e5e5e5;z-index:200;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .25s}
+  .panel.open{transform:translateX(0)}
+  .panel-head{padding:16px 20px;border-bottom:1px solid #e5e5e5;display:flex;justify-content:space-between;align-items:center}
+  .panel-head h2{font-size:16px;font-weight:600}
+  .close-btn{background:none;border:none;font-size:20px;cursor:pointer;color:#888;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:8px}
+  .close-btn:hover{background:#f5f5f5}
+  .panel-body{flex:1;overflow-y:auto;padding:16px 20px}
+  .cart-item{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid #f0f0f0}
+  .cart-item-emoji{font-size:28px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:#f5f5f5;border-radius:8px;overflow:hidden;flex-shrink:0}
+  .cart-item-emoji img{width:100%;height:100%;object-fit:cover}
+  .cart-item-info{flex:1}
+  .cart-item-name{font-size:13px;font-weight:500}
+  .cart-item-price{font-size:12px;color:#888}
+  .qty-ctrl{display:flex;align-items:center;gap:6px;margin-top:4px}
+  .qty-btn{background:#f5f5f5;border:1px solid #ddd;border-radius:4px;width:22px;height:22px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
+  .qty-num{font-size:13px;min-width:20px;text-align:center}
+  .del-btn{background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;padding:4px}
+  .panel-foot{padding:16px 20px;border-top:1px solid #e5e5e5}
+  .total-row{display:flex;justify-content:space-between;margin-bottom:12px;font-size:15px;font-weight:600}
+  .checkout-btn{width:100%;padding:11px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
+  .checkout-btn:hover{background:#2563eb}
+
+  /* PAYMENT */
+  .pay-method{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+  .pay-opt{border:1px solid #ddd;border-radius:8px;padding:10px 14px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:8px;background:#f9f9f9}
+  .pay-opt.selected{border-color:#3b82f6;background:#eff6ff;color:#3b82f6}
+  .pay-opt:hover{border-color:#aaa}
+
+  /* OVERLAY */
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:150;display:none}
+  .overlay.show{display:block}
+
+  /* MODAL */
+  .modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:520px;max-width:95vw;background:#fff;border-radius:12px;border:1px solid #e5e5e5;z-index:300;overflow:hidden;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 10px 30px rgba(0,0,0,.15)}
+  .modal.hide{display:none}
+  .modal-head{padding:16px 20px;border-bottom:1px solid #e5e5e5;display:flex;justify-content:space-between;align-items:center}
+  .modal-body{padding:20px;overflow-y:auto;flex:1}
+  .modal-img{width:100%;height:200px;display:flex;align-items:center;justify-content:center;font-size:72px;background:#f5f5f5;border-radius:8px;margin-bottom:16px;overflow:hidden}
+  .modal-img img{width:100%;height:100%;object-fit:cover}
+  .modal-name{font-size:20px;font-weight:600;margin-bottom:6px}
+  .modal-price{font-size:22px;font-weight:700;color:#3b82f6;margin-bottom:12px}
+  .modal-desc{font-size:14px;color:#555;line-height:1.6;margin-bottom:16px}
+  .badge-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .badge{padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500}
+  .badge-cat{background:#f0fdf4;color:#16a34a}
+  .badge-sold{background:#fffbeb;color:#d97706}
+  .modal-add{width:100%;padding:10px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;margin-top:16px}
+  .modal-add:hover{background:#2563eb}
+  .review-list{margin-top:12px}
+  .review-item{border-top:1px solid #f0f0f0;padding:10px 0}
+  .review-author{font-size:13px;font-weight:500;margin-bottom:3px}
+  .review-text{font-size:13px;color:#666}
+
+  /* SELLER FORM */
+  .form-row{margin-bottom:12px}
+  .form-row label{font-size:12px;color:#888;display:block;margin-bottom:4px}
+  .form-row input,.form-row textarea,.form-row select{width:100%;padding:8px 10px;border-radius:8px;border:1px solid #ddd;background:#f9f9f9;color:#1a1a1a;font-size:14px;font-family:inherit}
+  .form-row textarea{resize:vertical;min-height:72px}
+  .upload-area{border:2px dashed #ddd;border-radius:8px;padding:24px;text-align:center;cursor:pointer;font-size:14px;color:#888}
+  .upload-area:hover{background:#f9f9f9}
+  .submit-btn{background:#16a34a;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:14px;font-weight:600;cursor:pointer;width:100%}
+  .submit-btn:hover{background:#15803d}
+  .empty-cart{text-align:center;padding:40px 20px;color:#888;font-size:14px}
+
+  /* NOTIFICATION */
+  .notif{position:fixed;bottom:24px;right:24px;background:#fff;border:1px solid #86efac;border-radius:8px;padding:10px 16px;font-size:13px;color:#16a34a;z-index:400;display:none;box-shadow:0 2px 12px rgba(0,0,0,.1)}
+  .notif.show{display:block}
+
+  .section-title{font-size:14px;font-weight:600;margin-bottom:12px}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <h1>🛍️ TokoKu</h1>
+  <div class="search-bar">
+    <input type="text" placeholder="Cari produk..." id="searchInput" oninput="filterProducts()">
+  </div>
+  <button class="cart-btn" onclick="toggleCart()">
+    🛒 Keranjang
+    <span class="cart-count" id="cartCount">0</span>
+  </button>
+  <button class="sell-btn" onclick="openSeller()">+ Jual</button>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <h3>Filter</h3>
+    <label>Kategori</label>
+    <select id="catFilter" onchange="filterProducts()">
+      <option value="">Semua kategori</option>
+      <option value="Elektronik">Elektronik</option>
+      <option value="Fashion">Fashion</option>
+      <option value="Makanan">Makanan</option>
+      <option value="Olahraga">Olahraga</option>
+      <option value="Rumah">Rumah</option>
+    </select>
+    <label>Urutkan</label>
+    <select id="sortFilter" onchange="filterProducts()">
+      <option value="">Default</option>
+      <option value="low">Harga: Termurah</option>
+      <option value="high">Harga: Termahal</option>
+      <option value="rating">Rating terbaik</option>
+      <option value="sold">Terlaris</option>
+    </select>
+    <label>Harga maksimal</label>
+    <input type="range" id="priceRange" min="0" max="5000000" step="50000" value="5000000" oninput="updateRange(this)">
+    <div id="rangeLabel">s/d Rp 5.000.000</div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+    <div class="tab-bar">
+      <button class="tab active" onclick="switchTab('produk',this)">Produk</button>
+      <button class="tab" onclick="switchTab('seller',this)">Jual Produk</button>
+    </div>
+
+    <!-- TAB PRODUK -->
+    <div id="tabProduk">
+      <div class="product-grid" id="productGrid"></div>
+    </div>
+
+    <!-- TAB SELLER -->
+    <div id="tabSeller" style="display:none;max-width:500px">
+      <div class="section-title">Upload produk baru</div>
+      <div class="form-row">
+        <label>Foto produk</label>
+        <div class="upload-area" onclick="triggerUpload()" id="uploadArea">
+          📷<br><br>Klik untuk upload foto produk
+          <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleUpload(this)">
+        </div>
+        <img id="previewImg" style="display:none;width:100%;height:160px;object-fit:cover;border-radius:8px;margin-top:8px">
+      </div>
+      <div class="form-row"><label>Nama produk</label><input type="text" id="sellerName" placeholder="Contoh: Sepatu Lari Pro"></div>
+      <div class="form-row">
+        <label>Kategori</label>
+        <select id="sellerCat">
+          <option>Elektronik</option><option>Fashion</option><option>Makanan</option><option>Olahraga</option><option>Rumah</option>
+        </select>
+      </div>
+      <div class="form-row"><label>Harga (Rp)</label><input type="number" id="sellerPrice" placeholder="150000"></div>
+      <div class="form-row"><label>Deskripsi produk</label><textarea id="sellerDesc" placeholder="Jelaskan produk Anda secara detail..."></textarea></div>
+      <button class="submit-btn" onclick="submitProduct()">✅ Publikasikan produk</button>
+    </div>
+  </div>
+</div>
+
+<!-- OVERLAY -->
+<div class="overlay" id="overlay" onclick="closeAll()"></div>
+
+<!-- CART PANEL -->
+<div class="panel" id="cartPanel">
+  <div class="panel-head">
+    <h2>🛒 Keranjang</h2>
+    <button class="close-btn" onclick="toggleCart()">✕</button>
+  </div>
+  <div class="panel-body" id="cartBody"></div>
+  <div class="panel-foot" id="cartFoot" style="display:none">
+    <div style="font-size:13px;color:#888;margin-bottom:10px">Metode pembayaran</div>
+    <div class="pay-method">
+      <div class="pay-opt selected" onclick="selectPay(this,'Transfer Bank')">🏦 Transfer Bank</div>
+      <div class="pay-opt" onclick="selectPay(this,'QRIS')">📱 QRIS</div>
+      <div class="pay-opt" onclick="selectPay(this,'COD')">🚚 COD</div>
+      <div class="pay-opt" onclick="selectPay(this,'Dompet Digital')">👜 Dompet Digital</div>
+    </div>
+    <div class="total-row"><span>Total</span><span id="cartTotal">Rp 0</span></div>
+    <button class="checkout-btn" onclick="checkout()">Bayar sekarang</button>
+  </div>
+</div>
+
+<!-- MODAL DETAIL PRODUK -->
+<div class="modal hide" id="productModal">
+  <div class="modal-head">
+    <h2 id="modalTitle">Detail produk</h2>
+    <button class="close-btn" onclick="closeModal()">✕</button>
+  </div>
+  <div class="modal-body" id="modalBody"></div>
+</div>
+
+<!-- NOTIFIKASI -->
+<div class="notif" id="notif"></div>
+
+</div>
+
+<script>
+// =====================
+// DATA PRODUK
+// =====================
+const EMOJIS = { Elektronik:'📱', Fashion:'👕', Makanan:'🍕', Olahraga:'⚽', Rumah:'🏠' };
+
+const fmt = n => 'Rp ' + Math.round(n).toLocaleString('id-ID');
+const stars = r => '★'.repeat(Math.round(r)) + '☆'.repeat(5 - Math.round(r));
+
+let products = [
+  {
+    id:1, name:'Smartphone Pro X', cat:'Elektronik', price:3500000, rating:4.8, sold:1240,
+    desc:'Smartphone flagship dengan kamera 108MP, baterai 5000mAh, dan layar AMOLED 6.7 inci. Cocok untuk konten kreator dan profesional.',
+    reviews:[
+      {author:'Budi S.', rating:5, text:'Kamera sangat tajam, baterai tahan seharian!'},
+      {author:'Rina A.', rating:4, text:'Layar cerah dan responsif, recommended!'}
+    ]
+  },
+  {
+    id:2, name:'Kemeja Batik Premium', cat:'Fashion', price:280000, rating:4.5, sold:890,
+    desc:'Kemeja batik tulis asli dari Jogja dengan motif klasik parang. Bahan katun prima yang adem dan nyaman dipakai seharian.',
+    reviews:[
+      {author:'Andi K.', rating:5, text:'Motifnya indah, bahannya adem banget!'},
+      {author:'Sinta D.', rating:4, text:'Kualitas bagus, jahitan rapi.'}
+    ]
+  },
+  {
+    id:3, name:'Pizza Margherita', cat:'Makanan', price:75000, rating:4.7, sold:2100,
+    desc:'Pizza autentik Italia dengan mozzarella segar, saus tomat San Marzano, dan basil dari kebun sendiri. Diameter 30cm.',
+    reviews:[
+      {author:'Dewi L.', rating:5, text:'Enak banget, keju mozzarellanya lumer!'},
+      {author:'Hendra P.', rating:5, text:'Rasa autentik Italia, highly recommended!'}
+    ]
+  },
+  {
+    id:4, name:'Sepatu Lari Aero', cat:'Olahraga', price:450000, rating:4.6, sold:567,
+    desc:'Sepatu lari teknologi terbaru dengan bantalan EVA ultra-ringan dan outsole carbon fiber. Cocok untuk marathon dan latihan harian.',
+    reviews:[
+      {author:'Fajar M.', rating:5, text:'Nyaman banget, kaki nggak pegal meski lari 10km'},
+      {author:'Nina C.', rating:4, text:'Ringan dan responsif!'}
+    ]
+  },
+  {
+    id:5, name:'Kursi Gaming Ergonomis', cat:'Rumah', price:1800000, rating:4.4, sold:340,
+    desc:'Kursi gaming dengan sandaran lumbar, headrest memory foam, dan armrest 4D yang bisa disesuaikan. Cocok untuk WFH dan gaming marathon.',
+    reviews:[
+      {author:'Rizky T.', rating:4, text:'Nyaman untuk kerja 8 jam, punggung tidak sakit'},
+      {author:'Ayu P.', rating:5, text:'Kualitas premium, worth the price!'}
+    ]
+  },
+  {
+    id:6, name:'Laptop UltraSlim', cat:'Elektronik', price:4200000, rating:4.9, sold:780,
+    desc:'Laptop tipis 13.3 inci dengan prosesor terbaru, RAM 16GB, SSD 512GB. Baterai tahan 12 jam, bobot hanya 1.1kg.',
+    reviews:[
+      {author:'Yoga R.', rating:5, text:'Cepat banget, baterai awet seharian!'},
+      {author:'Mila F.', rating:5, text:'Tipis dan ringan, enak dibawa ke mana-mana'}
+    ]
+  },
+  {
+    id:7, name:'Tas Ransel Outdoor', cat:'Fashion', price:320000, rating:4.3, sold:456,
+    desc:'Ransel 35L anti air dengan sistem ventilasi punggung AirMesh. Terdapat kompartemen laptop 15 inci dan banyak kantong organizer.',
+    reviews:[
+      {author:'Doni S.', rating:4, text:'Kapasitas besar, bahan kuat dan tahan air'},
+      {author:'Lela K.', rating:5, text:'Punggung tidak panas meski dipakai lama'}
+    ]
+  },
+  {
+    id:8, name:'Matcha Latte Set', cat:'Makanan', price:95000, rating:4.8, sold:1890,
+    desc:'Set matcha grade ceremonial dari Uji, Jepang. Lengkap dengan bamboo whisk, matcha bowl, dan 50g matcha premium.',
+    reviews:[
+      {author:'Clara H.', rating:5, text:'Matcha-nya smooth, tidak pahit sama sekali!'},
+      {author:'Bagas W.', rating:5, text:'Kualitas ceremonial grade beneran!'}
+    ]
+  }
+];
+
+let cart = [];
+let payMethod = 'Transfer Bank';
+let filteredProducts = [...products];
+
+// =====================
+// RENDER GRID PRODUK
+// =====================
+function renderGrid() {
+  const g = document.getElementById('productGrid');
+  if (!filteredProducts.length) {
+    g.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:#888">🔍 Produk tidak ditemukan</div>';
+    return;
+  }
+  g.innerHTML = filteredProducts.map(p => `
+    <div class="product-card" onclick="openModal(${p.id})">
+      <div class="product-img">
+        ${p.img
+          ? `<img src="${p.img}" alt="${p.name}">`
+          : `<span>${EMOJIS[p.cat] || '📦'}</span>`}
+      </div>
+      <div class="product-info">
+        <div class="product-name">${p.name}</div>
+        <div class="product-price">${fmt(p.price)}</div>
+        <div class="product-meta">
+          <span class="stars">${stars(p.rating)} <span style="color:#888">${p.rating}</span></span>
+          <span>${p.sold.toLocaleString('id-ID')} terjual</span>
+        </div>
+        <button class="add-cart-btn" onclick="event.stopPropagation();addToCart(${p.id})">+ Tambah</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// =====================
+// FILTER & SORT
+// =====================
+function filterProducts() {
+  const q   = document.getElementById('searchInput').value.toLowerCase();
+  const cat = document.getElementById('catFilter').value;
+  const sort= document.getElementById('sortFilter').value;
+  const maxP= +document.getElementById('priceRange').value;
+
+  filteredProducts = products.filter(p =>
+    (p.name.toLowerCase().includes(q) || p.cat.toLowerCase().includes(q)) &&
+    (!cat || p.cat === cat) &&
+    p.price <= maxP
+  );
+
+  if (sort === 'low')    filteredProducts.sort((a,b) => a.price - b.price);
+  else if (sort === 'high')   filteredProducts.sort((a,b) => b.price - a.price);
+  else if (sort === 'rating') filteredProducts.sort((a,b) => b.rating - a.rating);
+  else if (sort === 'sold')   filteredProducts.sort((a,b) => b.sold - a.sold);
+
+  renderGrid();
+}
+
+function updateRange(el) {
+  document.getElementById('rangeLabel').textContent = 's/d ' + fmt(+el.value);
+  filterProducts();
+}
+
+// =====================
+// KERANJANG
+// =====================
+function addToCart(id) {
+  const p  = products.find(x => x.id === id);
+  const ex = cart.find(x => x.id === id);
+  if (ex) ex.qty++;
+  else cart.push({ ...p, qty: 1 });
+  updateCartUI();
+  showNotif('🛒 ' + p.name + ' ditambahkan ke keranjang');
+}
+
+function removeFromCart(id) {
+  cart = cart.filter(x => x.id !== id);
+  updateCartUI();
+}
+
+function changeQty(id, d) {
+  const item = cart.find(x => x.id === id);
+  if (!item) return;
+  item.qty += d;
+  if (item.qty < 1) removeFromCart(id);
+  else updateCartUI();
+}
+
+function updateCartUI() {
+  const total = cart.reduce((s, x) => s + x.price * x.qty, 0);
+  document.getElementById('cartCount').textContent = cart.reduce((s,x) => s + x.qty, 0);
+  document.getElementById('cartTotal').textContent = fmt(total);
+
+  const body = document.getElementById('cartBody');
+  const foot = document.getElementById('cartFoot');
+
+  if (!cart.length) {
+    body.innerHTML = '<div class="empty-cart">🛒<br><br>Keranjang masih kosong</div>';
+    foot.style.display = 'none';
+  } else {
+    body.innerHTML = cart.map(x => `
+      <div class="cart-item">
+        <div class="cart-item-emoji">
+          ${x.img ? `<img src="${x.img}" alt="${x.name}">` : `${EMOJIS[x.cat] || '📦'}`}
+        </div>
+        <div class="cart-item-info">
+          <div class="cart-item-name">${x.name}</div>
+          <div class="cart-item-price">${fmt(x.price)}</div>
+          <div class="qty-ctrl">
+            <button class="qty-btn" onclick="changeQty(${x.id},-1)">−</button>
+            <span class="qty-num">${x.qty}</span>
+            <button class="qty-btn" onclick="changeQty(${x.id},1)">+</button>
+          </div>
+        </div>
+        <button class="del-btn" onclick="removeFromCart(${x.id})">🗑️</button>
+      </div>
+    `).join('');
+    foot.style.display = 'block';
+  }
+}
+
+function toggleCart() {
+  const p = document.getElementById('cartPanel');
+  const o = document.getElementById('overlay');
+  if (p.classList.contains('open')) {
+    p.classList.remove('open');
+    o.classList.remove('show');
+  } else {
+    p.classList.add('open');
+    o.classList.add('show');
+  }
+}
+
+function closeAll() {
+  document.getElementById('cartPanel').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+  closeModal();
+}
+
+// =====================
+// MODAL DETAIL PRODUK
+// =====================
+function openModal(id) {
+  const p = products.find(x => x.id === id);
+  document.getElementById('modalTitle').textContent = p.name;
+  document.getElementById('modalBody').innerHTML = `
+    <div class="modal-img">
+      ${p.img ? `<img src="${p.img}" alt="${p.name}">` : `<span>${EMOJIS[p.cat] || '📦'}</span>`}
+    </div>
+    <div class="modal-name">${p.name}</div>
+    <div class="modal-price">${fmt(p.price)}</div>
+    <div class="badge-row">
+      <span class="badge badge-cat">${p.cat}</span>
+      <span class="badge badge-sold">⭐ ${p.rating} · ${p.sold.toLocaleString('id-ID')} terjual</span>
+    </div>
+    <div class="modal-desc">${p.desc}</div>
+    <div style="font-size:13px;font-weight:600;margin-bottom:8px">Ulasan pembeli</div>
+    <div class="review-list">
+      ${p.reviews.map(r => `
+        <div class="review-item">
+          <div class="review-author">${r.author} <span class="stars" style="font-size:11px">${stars(r.rating)}</span></div>
+          <div class="review-text">${r.text}</div>
+        </div>
+      `).join('')}
+    </div>
+    <button class="modal-add" onclick="addToCart(${p.id});closeModal()">🛒 Tambah ke keranjang</button>
+  `;
+  document.getElementById('productModal').classList.remove('hide');
+  document.getElementById('overlay').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('productModal').classList.add('hide');
+  if (!document.getElementById('cartPanel').classList.contains('open'))
+    document.getElementById('overlay').classList.remove('show');
+}
+
+// =====================
+// PEMBAYARAN
+// =====================
+function selectPay(el, method) {
+  document.querySelectorAll('.pay-opt').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  payMethod = method;
+}
+
+function checkout() {
+  if (!cart.length) return;
+  const total = cart.reduce((s, x) => s + x.price * x.qty, 0);
+  cart = [];
+  updateCartUI();
+  toggleCart();
+  showNotif('✅ Pembayaran via ' + payMethod + ' berhasil! Total ' + fmt(total));
+}
+
+// =====================
+// SELLER / UPLOAD PRODUK
+// =====================
+function switchTab(tab, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tabProduk').style.display  = tab === 'produk'  ? '' : 'none';
+  document.getElementById('tabSeller').style.display  = tab === 'seller'  ? '' : 'none';
+}
+
+function openSeller() {
+  switchTab('seller', document.querySelectorAll('.tab')[1]);
+}
+
+function triggerUpload() {
+  document.getElementById('fileInput').click();
+}
+
+function handleUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('previewImg').src = e.target.result;
+    document.getElementById('previewImg').style.display = 'block';
+    document.getElementById('uploadArea').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function submitProduct() {
+  const name  = document.getElementById('sellerName').value.trim();
+  const price = +document.getElementById('sellerPrice').value;
+  const cat   = document.getElementById('sellerCat').value;
+  const desc  = document.getElementById('sellerDesc').value.trim();
+  const imgEl = document.getElementById('previewImg');
+  const img   = imgEl.src && imgEl.src.startsWith('data:') ? imgEl.src : null;
+
+  if (!name || !price || !desc) {
+    showNotif('⚠️ Isi semua kolom terlebih dahulu');
+    return;
+  }
+
+  const newProduct = { id: Date.now(), name, cat, price, rating: 0, sold: 0, desc, reviews: [], img };
+  products.unshift(newProduct);
+  filteredProducts = [...products];
+  filterProducts();
+
+  // Reset form
+  document.getElementById('sellerName').value  = '';
+  document.getElementById('sellerPrice').value = '';
+  document.getElementById('sellerDesc').value  = '';
+  imgEl.style.display = 'none';
+  document.getElementById('uploadArea').style.display = 'block';
+  document.getElementById('fileInput').value = '';
+
+  switchTab('produk', document.querySelectorAll('.tab')[0]);
+  showNotif('✅ Produk berhasil dipublikasikan!');
+}
+
+// =====================
+// NOTIFIKASI
+// =====================
+function showNotif(msg) {
+  const n = document.getElementById('notif');
+  n.textContent = msg;
+  n.classList.add('show');
+  setTimeout(() => n.classList.remove('show'), 3000);
+}
+
+// =====================
+// INIT
+// =====================
+updateCartUI();
+renderGrid();
+</script>
+</body>
+</html>
