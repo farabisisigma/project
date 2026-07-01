@@ -276,16 +276,25 @@
   // FIRESTORE — load produk
   // =====================
   async function loadProducts() {
+    // Tampilkan data default dulu supaya tidak kosong
+    filteredProducts = [...products];
+    renderGrid();
+    // Lalu coba load dari Firestore
     try {
       const snap = await getDocs(collection(db, 'products'));
       if (!snap.empty) {
-        products = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const firestoreProducts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        // Gabungkan: Firestore produk + default produk (hindari duplikat nama)
+        const firestoreNames = firestoreProducts.map(p => p.name);
+        const defaultOnly = products.filter(p => !firestoreNames.includes(p.name));
+        products = [...firestoreProducts, ...defaultOnly];
+        filteredProducts = [...products];
+        renderGrid();
       }
     } catch(e) {
-      // Firestore belum ada data, pakai default
+      console.warn('Firestore error:', e.message);
+      // Tetap pakai data default yang sudah dirender
     }
-    filteredProducts = [...products];
-    renderGrid();
   }
 
   // =====================
@@ -380,6 +389,7 @@
     const total = cart.reduce((s,x)=>s+x.price*x.qty,0);
     document.getElementById('cartCount').textContent = cart.reduce((s,x)=>s+x.qty,0);
     document.getElementById('cartTotal').textContent = fmt(total);
+    updateBnavBadge();
     const body = document.getElementById('cartBody');
     const foot = document.getElementById('cartFoot');
     if (!cart.length) {
@@ -585,10 +595,8 @@
     else document.getElementById('userDropdown').classList.toggle('show');
   };
 
-  // Update badge keranjang di bottom nav juga
-  const _origUpdateCartUI = updateCartUI;
-  function updateCartUI() {
-    _origUpdateCartUI();
+  // Update badge keranjang di bottom nav
+  function updateBnavBadge() {
     const count = cart.reduce((s,x)=>s+x.qty, 0);
     const badge = document.getElementById('bnavBadge');
     if (badge) { badge.textContent = count; badge.style.display = count ? 'flex' : 'none'; }
