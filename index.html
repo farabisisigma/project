@@ -539,6 +539,60 @@
   // =====================
   updateCartUI();
   loadProducts();
+
+  // =====================
+  // MOBILE — sync filter drawer dengan desktop
+  // =====================
+  window.syncSearch = function(el) {
+    document.getElementById('searchInput').value = el.value;
+    filterProducts();
+  };
+  window.syncFilter = function() {
+    document.getElementById('catFilter').value  = document.getElementById('catFilterMobile').value;
+    document.getElementById('sortFilter').value = document.getElementById('sortFilterMobile').value;
+    filterProducts();
+  };
+  window.syncRange = function(el) {
+    document.getElementById('priceRange').value = el.value;
+    const label = 's/d ' + fmt(+el.value);
+    document.getElementById('rangeLabel').textContent       = label;
+    document.getElementById('rangeLabelMobile').textContent = label;
+    filterProducts();
+  };
+
+  // =====================
+  // MOBILE — filter drawer
+  // =====================
+  window.openFilterDrawer = function() {
+    document.getElementById('filterDrawer').classList.add('open');
+    document.getElementById('overlayDrawer').classList.add('show');
+  };
+  window.closeFilterDrawer = function() {
+    document.getElementById('filterDrawer').classList.remove('open');
+    document.getElementById('overlayDrawer').classList.remove('show');
+  };
+
+  // =====================
+  // MOBILE — bottom nav
+  // =====================
+  window.bnavGo = function(tab, el) {
+    document.querySelectorAll('.bnav-item').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    if (tab === 'home') switchTab('produk', document.querySelectorAll('.tab')[0]);
+  };
+  window.bnavProfile = function() {
+    if (!currentUser) openAuth('Masuk dulu untuk mengakses profil.');
+    else document.getElementById('userDropdown').classList.toggle('show');
+  };
+
+  // Update badge keranjang di bottom nav juga
+  const _origUpdateCartUI = updateCartUI;
+  function updateCartUI() {
+    _origUpdateCartUI();
+    const count = cart.reduce((s,x)=>s+x.qty, 0);
+    const badge = document.getElementById('bnavBadge');
+    if (badge) { badge.textContent = count; badge.style.display = count ? 'flex' : 'none'; }
+  }
 </script>
 
 <style>
@@ -678,8 +732,51 @@
   .submit-btn:hover{background:#15803d}
   .empty-cart{text-align:center;padding:40px 20px;color:#888;font-size:14px}
   .section-title{font-size:14px;font-weight:600;margin-bottom:12px}
-  .notif{position:fixed;bottom:24px;right:24px;background:#fff;border:1px solid #86efac;border-radius:8px;padding:10px 16px;font-size:13px;color:#16a34a;z-index:400;display:none;box-shadow:0 2px 12px rgba(0,0,0,.1)}
+  .notif{position:fixed;bottom:72px;right:12px;left:12px;text-align:center;background:#fff;border:1px solid #86efac;border-radius:8px;padding:10px 16px;font-size:13px;color:#16a34a;z-index:400;display:none;box-shadow:0 2px 12px rgba(0,0,0,.1)}
   .notif.show{display:block}
+
+  /* NOTIF update */
+  /* BOTTOM NAV */
+  .bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:#1e1b4b;border-top:1px solid #312e81;z-index:100}
+  .bottom-nav-inner{display:flex;align-items:stretch}
+  .bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 4px 12px;font-size:10px;color:rgba(255,255,255,.55);cursor:pointer;gap:3px;border:none;background:none;position:relative}
+  .bnav-item:hover,.bnav-item.active{color:#a5b4fc}
+  .bnav-icon{font-size:20px;line-height:1}
+  .bnav-badge{position:absolute;top:6px;right:calc(50% - 18px);background:#818cf8;color:#fff;border-radius:50%;width:16px;height:16px;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center}
+  /* FILTER DRAWER */
+  .filter-drawer{position:fixed;bottom:0;left:0;right:0;background:#fff;border-radius:16px 16px 0 0;z-index:180;padding:20px 20px 100px;transform:translateY(100%);transition:transform .3s;max-height:80vh;overflow-y:auto;box-shadow:0 -4px 24px rgba(0,0,0,.12)}
+  .filter-drawer.open{transform:translateY(0)}
+  .filter-drawer-handle{width:40px;height:4px;background:#ddd;border-radius:2px;margin:0 auto 16px}
+  .filter-drawer h3{font-size:14px;font-weight:600;margin-bottom:14px}
+  .filter-drawer select{width:100%;margin-bottom:12px;font-size:14px;padding:10px 12px;border-radius:8px;border:1px solid #ddd;background:#f9f9f9;color:#1a1a1a}
+  .filter-drawer label{font-size:13px;color:#888;display:block;margin-bottom:4px}
+  @media(max-width:640px){
+    .navbar{padding:10px 14px;gap:8px;flex-wrap:nowrap}
+    .logo-sub{display:none}
+    .logo-name{font-size:15px}
+    .logo-icon{width:30px;height:30px;font-size:15px}
+    .search-bar{flex:1;min-width:0}
+    .search-bar input{font-size:13px;padding:7px 10px}
+    .sell-btn,.auth-btn-label{display:none}
+    .auth-btn{padding:7px 10px;font-size:13px;white-space:nowrap}
+    .user-chip{padding:4px 8px 4px 4px;font-size:12px}
+    .sidebar{display:none}
+    .main{flex-direction:column}
+    .content{padding:12px 12px 90px}
+    .product-grid{grid-template-columns:repeat(2,1fr);gap:10px}
+    .product-img{height:120px}
+    .product-name{font-size:13px}
+    .product-price{font-size:13px}
+    .add-cart-btn{font-size:12px;padding:6px}
+    .panel{width:100%;top:auto;height:90vh;border-radius:16px 16px 0 0}
+    .modal{width:100%;max-width:100%;top:auto;left:0;right:0;bottom:0;transform:none;border-radius:16px 16px 0 0;max-height:90vh}
+    #authModal{width:100%}
+    .bottom-nav{display:block}
+    .notif{bottom:72px;left:12px;right:12px;text-align:center}
+    .user-dropdown{top:52px;right:10px;width:180px}
+    .tab{padding:7px 12px;font-size:13px}
+  }
+
 </style>
 </head>
 <body>
@@ -842,6 +939,59 @@
 </div>
 
 <div class="notif" id="notif"></div>
+
+<!-- BOTTOM NAV (mobile only) -->
+<nav class="bottom-nav">
+  <div class="bottom-nav-inner">
+    <button class="bnav-item active" id="bnavHome" onclick="bnavGo('home',this)">
+      <span class="bnav-icon">🏠</span>Beranda
+    </button>
+    <button class="bnav-item" id="bnavFilter" onclick="openFilterDrawer()">
+      <span class="bnav-icon">🔍</span>Filter
+    </button>
+    <button class="bnav-item" id="bnavSell" onclick="openSeller()">
+      <span class="bnav-icon">➕</span>Jual
+    </button>
+    <button class="bnav-item" id="bnavCart" onclick="toggleCart()">
+      <span class="bnav-icon">🛒</span>Keranjang
+      <span class="bnav-badge" id="bnavBadge" style="display:none">0</span>
+    </button>
+    <button class="bnav-item" id="bnavProfile" onclick="bnavProfile()">
+      <span class="bnav-icon">👤</span>Akun
+    </button>
+  </div>
+</nav>
+
+<!-- FILTER DRAWER (mobile) -->
+<div class="filter-drawer" id="filterDrawer">
+  <div class="filter-drawer-handle"></div>
+  <h3>Filter &amp; Urutkan</h3>
+  <label>Pencarian</label>
+  <input type="text" id="searchMobile" placeholder="Cari produk..." style="width:100%;margin-bottom:12px;font-size:14px;padding:10px 12px;border-radius:8px;border:1px solid #ddd;background:#f9f9f9" oninput="syncSearch(this)">
+  <label>Kategori</label>
+  <select id="catFilterMobile" onchange="syncFilter()">
+    <option value="">Semua kategori</option>
+    <option value="Elektronik">Elektronik</option>
+    <option value="Fashion">Fashion</option>
+    <option value="Makanan">Makanan</option>
+    <option value="Olahraga">Olahraga</option>
+    <option value="Rumah">Rumah</option>
+  </select>
+  <label>Urutkan</label>
+  <select id="sortFilterMobile" onchange="syncFilter()">
+    <option value="">Default</option>
+    <option value="low">Harga: Termurah</option>
+    <option value="high">Harga: Termahal</option>
+    <option value="rating">Rating terbaik</option>
+    <option value="sold">Terlaris</option>
+  </select>
+  <label>Harga maksimal</label>
+  <input type="range" id="priceRangeMobile" min="0" max="5000000" step="50000" value="5000000" style="width:100%;accent-color:#3b82f6;margin-bottom:4px" oninput="syncRange(this)">
+  <div id="rangeLabelMobile" style="font-size:12px;color:#888;margin-bottom:16px">s/d Rp 5.000.000</div>
+  <button onclick="closeFilterDrawer()" style="width:100%;padding:11px;background:#4f46e5;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">Terapkan Filter</button>
+</div>
+<div class="overlay" id="overlayDrawer" onclick="closeFilterDrawer()" style="z-index:170"></div>
+
 </div>
 </body>
 </html>
