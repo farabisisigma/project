@@ -1,126 +1,144 @@
-# 🛍️ TokoKu — Web Penjualan Sederhana
+# 🛒 TokoKu Store
 
-Aplikasi web penjualan barang berbasis HTML, CSS, dan JavaScript murni. Tidak memerlukan framework, library eksternal, atau server backend. Cukup buka file di browser.
+TokoKu Store adalah sebuah website e-commerce sederhana yang dibuat sebagai proyek pembelajaran pengembangan web. Website ini menampilkan katalog produk, detail produk, serta antarmuka yang responsif sehingga dapat digunakan dengan nyaman di berbagai perangkat.
+
+## 🌐 Demo
+
+**Live Website:** https://tokokustore.netlify.app/
 
 ---
 
-## 🚀 Cara Menjalankan
+## 📖 Deskripsi
 
-1. Download file `toko-online.html`
-2. Buka file tersebut di browser (Chrome, Firefox, Edge, dll.)
-3. Aplikasi langsung berjalan — tidak perlu instalasi apapun
+Proyek ini bertujuan untuk mensimulasikan tampilan toko online modern dengan desain yang sederhana, bersih, dan mudah digunakan. Pengguna dapat melihat daftar produk, mencari informasi produk, serta menikmati pengalaman berbelanja melalui antarmuka yang intuitif.
+
+Website ini juga dapat dijadikan dasar untuk pengembangan aplikasi e-commerce yang lebih kompleks di masa mendatang.
 
 ---
 
 ## ✨ Fitur
 
-### 🔍 Pencarian & Filter
-- **Pencarian real-time** — ketik nama atau kategori produk, hasil langsung muncul
-- **Filter kategori** — Elektronik, Fashion, Makanan, Olahraga, Rumah
-- **Sortir harga** — dari termurah ke termahal, atau sebaliknya
-- **Sortir rating** — produk dengan rating tertinggi tampil duluan
-- **Sortir terlaris** — berdasarkan jumlah produk terjual
-- **Slider harga** — filter produk berdasarkan harga maksimal
-
-### 🛒 Keranjang Belanja
-- Tambah produk tanpa batas ke keranjang
-- Ubah jumlah item dengan tombol `+` dan `−`
-- Hapus item dari keranjang
-- Total harga terupdate otomatis
-
-### 💳 Pembayaran
-- Pilih metode pembayaran: **Transfer Bank**, **QRIS**, **COD**, **Dompet Digital**
-- Konfirmasi pembayaran dengan notifikasi sukses
-
-### 📦 Detail Produk
-- Klik produk untuk membuka halaman detail
-- Menampilkan deskripsi lengkap, rating, jumlah terjual
-- Menampilkan ulasan dari pembeli
-
-### 📤 Jual Produk (Seller)
-- Upload foto produk langsung dari perangkat
-- Isi nama, kategori, harga, dan deskripsi
-- Produk langsung muncul di halaman utama setelah dipublikasikan
+* Menampilkan daftar produk
+* Tampilan produk yang menarik
+* Halaman detail produk
+* Desain responsif (Desktop, Tablet, Mobile)
+* Navigasi yang mudah digunakan
+* User Interface (UI) yang modern
+* Loading halaman yang cepat
 
 ---
 
-## 📁 Struktur File
+## 🛠️ Teknologi yang Digunakan
 
-```
-toko-online.html
+* HTML5
+* CSS3
+* JavaScript
+* Netlify (Deployment)
+
+---
+
+## 📂 Struktur Proyek
+
+```text
+TokoKu-Store/
 │
-├── <style>          → Semua styling CSS (layout, komponen, responsif)
-│
-├── <body>           → Struktur HTML
-│   ├── navbar       → Logo, search bar, tombol keranjang & jual
-│   ├── sidebar      → Filter kategori, sortir, slider harga
-│   ├── content      → Grid produk & form seller
-│   ├── cart panel   → Panel keranjang (slide dari kanan)
-│   └── modal        → Detail produk & ulasan
-│
-└── <script>         → Semua logika JavaScript
-    ├── Data produk  → Array produk awal
-    ├── renderGrid() → Render kartu produk ke grid
-    ├── filterProducts() → Filter + sort produk
-    ├── addToCart()  → Tambah produk ke keranjang
-    ├── updateCartUI() → Update tampilan keranjang
-    ├── openModal()  → Buka detail produk
-    ├── checkout()   → Proses pembayaran
-    └── submitProduct() → Publikasikan produk baru
+├── index.html
+├── css/
+│   └── style.css
+├── js/
+│   └── script.js
+├── assets/
+│   ├── images/
+│   └── icons/
+└── README.md
 ```
 
----
-
-## 🧩 Teknologi
-
-| Teknologi | Keterangan |
-|-----------|------------|
-| HTML5 | Struktur halaman |
-| CSS3 | Styling & animasi |
-| JavaScript (Vanilla) | Semua logika aplikasi |
-| FileReader API | Upload & preview foto produk |
-
-> Tidak menggunakan framework (React, Vue, dll.) maupun library eksternal.
+> Struktur folder dapat sedikit berbeda sesuai implementasi proyek.
 
 ---
 
-## 📝 Cara Menambah Produk Secara Manual (di Kode)
+## 🚀 Cara Menjalankan Project
 
-Buka file `toko-online.html`, cari bagian `let products = [...]`, lalu tambahkan objek produk baru:
+### 1. Clone Repository
 
-```js
-{
-  id: 9,                          // ID unik (angka)
-  name: 'Nama Produk',            // Nama produk
-  cat: 'Elektronik',              // Kategori (lihat daftar di bawah)
-  price: 250000,                  // Harga dalam Rupiah
-  rating: 4.5,                    // Rating (0.0 - 5.0)
-  sold: 100,                      // Jumlah terjual
-  desc: 'Deskripsi produk...',    // Deskripsi lengkap
-  reviews: [
-    { author: 'Nama Pembeli', rating: 5, text: 'Isi ulasan...' }
-  ]
-}
+```bash
+git clone https://github.com/username/tokoku-store.git
 ```
 
-**Kategori yang tersedia:** `Elektronik` · `Fashion` · `Makanan` · `Olahraga` · `Rumah`
+### 2. Masuk ke Folder Project
+
+```bash
+cd tokoku-store
+```
+
+### 3. Jalankan Website
+
+Buka file `index.html` menggunakan browser.
+
+Atau gunakan ekstensi **Live Server** di Visual Studio Code agar proses pengembangan lebih mudah.
 
 ---
 
-## 🔧 Pengembangan Lanjutan
+## 📱 Tampilan Responsif
 
-Beberapa ide untuk mengembangkan proyek ini lebih jauh:
+Website telah dirancang agar dapat berjalan dengan baik pada:
 
-- **Backend** — hubungkan ke Node.js / PHP untuk menyimpan data produk secara permanen
-- **Database** — simpan produk dan transaksi ke MySQL / MongoDB
-- **Autentikasi** — sistem login untuk pembeli dan seller
-- **Pagination** — tampilkan produk per halaman jika jumlahnya banyak
-- **Wishlist** — fitur simpan produk favorit
-- **Riwayat transaksi** — tampilkan history pembelian
-- **Responsif mobile** — optimasi tampilan untuk layar kecil
+* Desktop
+* Laptop
+* Tablet
+* Smartphone
 
 ---
 
-## 👤 Dibuat Dengan
+## 🎯 Tujuan Proyek
 
-HTML · CSS · JavaScript — tanpa dependency apapun.
+Proyek ini dibuat untuk:
+
+* Mempelajari dasar pengembangan website e-commerce.
+* Melatih penggunaan HTML, CSS, dan JavaScript.
+* Memahami konsep desain responsif.
+* Menjadi portofolio pengembangan web.
+
+---
+
+## 🔮 Pengembangan Selanjutnya
+
+Beberapa fitur yang dapat ditambahkan di masa depan:
+
+* Login & Register
+* Keranjang Belanja (Shopping Cart)
+* Wishlist
+* Sistem Checkout
+* Pembayaran Online
+* Dashboard Admin
+* Database Produk
+* Filter & Pencarian Produk
+* Dark Mode
+
+---
+
+## 🤝 Kontribusi
+
+Kontribusi selalu terbuka.
+
+Jika ingin memberikan saran atau melakukan pengembangan:
+
+1. Fork repository.
+2. Buat branch baru.
+3. Lakukan perubahan.
+4. Commit perubahan.
+5. Buat Pull Request.
+
+---
+
+## 📄 Lisensi
+
+Project ini dibuat untuk keperluan pembelajaran dan pengembangan portofolio.
+
+---
+
+## 👨‍💻 Author
+
+**Nama:** : farabi&rafael
+
+Website: https://tokokustore.netlify.app/
