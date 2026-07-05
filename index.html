@@ -8,7 +8,7 @@
 <!-- Firebase CDN -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, collection, getDocs, addDoc, serverTimestamp }
+  import { getFirestore, collection, getDocs, addDoc, deleteDoc, updateDoc, doc, serverTimestamp }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
   import {
     getAuth,
@@ -315,21 +315,146 @@
   // =====================
   async function saveProductToFirestore(p) {
     try {
+      // Cek ukuran data sebelum simpan
+      const imgSize = (p.img || '').length * 0.75 / 1024; // KB
+      console.log(`Ukuran data produk: img=${Math.round(imgSize)}KB`);
+
+      if (imgSize > 900) {
+        showNotif('⚠️ Foto terlalu besar, coba foto yang lebih kecil', true);
+        return;
+      }
+
       const docRef = await addDoc(collection(db, 'products'), {
-        name: p.name, cat: p.cat, price: p.price,
-        desc: p.desc, img: p.img || '',
-        rating: 0, sold: 0, reviews: [],
-        createdBy: currentUser.uid,
+        name:      p.name,
+        cat:       p.cat,
+        price:     p.price,
+        desc:      p.desc,
+        img:       p.img || '',
+        rating:    0,
+        sold:      0,
+        reviews:   [],
+        createdBy: currentUser ? currentUser.uid : 'anonymous',
         createdAt: serverTimestamp()
       });
-      // Update id lokal dengan id Firestore supaya konsisten
-      p.firestoreId = docRef.id;
-      console.log('Produk tersimpan di Firestore:', docRef.id);
+
+      p.id = docRef.id; // Update id lokal = id Firestore
+      console.log('✅ Produk tersimpan di Firestore:', docRef.id);
+      showNotif('☁️ Produk tersimpan permanen di cloud!');
     } catch(e) {
-      console.warn('Firestore save failed:', e.message);
-      showNotif('⚠️ Produk tampil lokal tapi gagal tersimpan ke cloud', true);
+      console.error('Firestore save failed:', e.message);
+      if (e.code === 'permission-denied') {
+        showNotif('❌ Akses ditolak — pastikan sudah login', true);
+      } else if (e.message.includes('quota')) {
+        showNotif('❌ Kuota Firestore habis, coba lagi nanti', true);
+      } else {
+        showNotif('⚠️ Gagal simpan ke cloud: ' + e.message, true);
+      }
     }
   }
+
+  // =====================
+  // HAPUS PRODUK
+  // =====================
+  window.deleteProduct = async function(id, event) {
+    event.stopPropagation();
+    if (!currentUser) { showNotif('❌ Harus login dulu', true); return; }
+    if (!confirm('Yakin ingin menghapus produk ini?')) return;
+
+    // Hapus dari array lokal
+    products = products.filter(x => String(x.id) !== String(id));
+    filteredProducts = filteredProducts.filter(x => String(x.id) !== String(id));
+    renderGrid();
+    renderMyProducts();
+
+    // Hapus dari Firestore (hanya kalau id bukan angka — berarti dari Firestore)
+    if (isNaN(id)) {
+      try {
+        await deleteDoc(doc(db, 'products', id));
+        showNotif('🗑️ Produk berhasil dihapus');
+      } catch(e) {
+        showNotif('⚠️ Hapus lokal berhasil, tapi gagal hapus di cloud: ' + e.message, true);
+      }
+    } else {
+      showNotif('🗑️ Produk berhasil dihapus');
+    }
+  };
+
+  // =====================
+  // EDIT PRODUK — buka modal edit
+  // =====================
+  window.editProduct = function(id, event) {
+    event.stopPropagation();
+    if (!currentUser) { showNotif('❌ Harus login dulu', true); return; }
+
+    const p = products.find(x => String(x.id) === String(id));
+    if (!p) return;
+
+    // Isi form seller dengan data produk
+    document.getElementById('sellerName').value  = p.name;
+    document.getElementById('sellerPrice').value = p.price;
+    document.getElementById('sellerCat').value   = p.cat;
+    document.getElementById('sellerDesc').value  = p.desc;
+
+    // Tampilkan preview foto
+    if (p.img) {
+      document.getElementById('previewImg').src = p.img;
+      document.getElementById('previewImg').style.display = 'block';
+      document.getElementById('uploadArea').style.display = 'none';
+    }
+
+    // Simpan id produk yang sedang diedit
+    document.getElementById('sellerForm').dataset.editId = id;
+
+    // Ganti teks tombol
+    document.getElementById('submitBtn').textContent = '✏️ Simpan perubahan';
+    document.getElementById('submitBtn').style.background = '#4f46e5';
+
+    // Tampilkan tombol batal edit
+    document.getElementById('cancelEditBtn').style.display = 'block';
+
+    // Pindah ke tab seller
+    switchTab('seller', document.querySelectorAll('.tab')[1]);
+
+    showNotif('✏️ Mode edit produk aktif');
+  };
+
+  window.cancelEdit = function() {
+    document.getElementById('sellerForm').dataset.editId = '';
+    document.getElementById('sellerName').value  = '';
+    document.getElementById('sellerPrice').value = '';
+    document.getElementById('sellerDesc').value  = '';
+    document.getElementById('previewImg').style.display = 'none';
+    document.getElementById('uploadArea').style.display = 'block';
+    document.getElementById('fileInput').value = '';
+    document.getElementById('submitBtn').textContent = '✅ Publikasikan produk';
+    document.getElementById('submitBtn').style.background = '#16a34a';
+    document.getElementById('cancelEditBtn').style.display = 'none';
+    document.getElementById('sellerTitle').textContent = 'Upload produk baru';
+    showNotif('↩️ Batal edit');
+  };
+
+  // Render daftar produk milik seller di tab Jual
+  window.renderMyProducts = function() {
+    const el = document.getElementById('myProductsList');
+    if (!el) return;
+    if (!currentUser) { el.innerHTML = '<div style="font-size:13px;color:#888">Masuk dulu untuk melihat produk kamu.</div>'; return; }
+    const mine = products.filter(p => p.createdBy === currentUser.uid);
+    if (!mine.length) { el.innerHTML = '<div style="font-size:13px;color:#888">Belum ada produk yang kamu jual.</div>'; return; }
+    el.innerHTML = mine.map(p => `
+      <div style="display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid #f0f0f0">
+        <div style="width:48px;height:48px;border-radius:8px;overflow:hidden;background:#f5f5f5;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px">
+          ${p.img ? `<img src="${p.img}" style="width:100%;height:100%;object-fit:cover">` : (EMOJIS[p.cat]||'📦')}
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div>
+          <div style="font-size:12px;color:#3b82f6;font-weight:600">${fmt(p.price)}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button onclick="editProduct('${p.id}',event)" style="padding:5px 10px;border-radius:6px;border:1px solid #6366f1;background:#eef2ff;color:#4f46e5;font-size:12px;cursor:pointer;font-weight:500">✏️ Edit</button>
+          <button onclick="deleteProduct('${p.id}',event)" style="padding:5px 10px;border-radius:6px;border:1px solid #fca5a5;background:#fef2f2;color:#ef4444;font-size:12px;cursor:pointer;font-weight:500">🗑️ Hapus</button>
+        </div>
+      </div>`).join('');
+  };
 
   // =====================
   // RENDER GRID
@@ -340,10 +465,18 @@
       g.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:#888">🔍 Produk tidak ditemukan</div>';
       return;
     }
-    g.innerHTML = filteredProducts.map(p => `
+    g.innerHTML = filteredProducts.map(p => {
+      // Cek apakah produk ini milik user yang login
+      const isOwner = currentUser && p.createdBy === currentUser.uid;
+      return `
       <div class="product-card" onclick="openModal('${p.id}')">
-        <div class="product-img">
+        <div class="product-img" style="position:relative">
           ${p.img ? `<img src="${p.img}" alt="${p.name}" onerror="this.style.display='none'">` : `<span>${EMOJIS[p.cat]||'📦'}</span>`}
+          ${isOwner ? `
+          <div class="owner-actions" onclick="event.stopPropagation()">
+            <button class="owner-btn edit-btn" onclick="editProduct('${p.id}',event)" title="Edit produk">✏️</button>
+            <button class="owner-btn del-btn-card" onclick="deleteProduct('${p.id}',event)" title="Hapus produk">🗑️</button>
+          </div>` : ''}
         </div>
         <div class="product-info">
           <div class="product-name">${p.name}</div>
@@ -356,7 +489,8 @@
             <span class="btn-icon">🛒</span> <span class="btn-label">Tambah</span>
           </button>
         </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
   };
 
   // =====================
@@ -547,6 +681,7 @@
     else document.querySelectorAll('.tab')[tab==='produk'?0:1].classList.add('active');
     document.getElementById('tabProduk').style.display  = tab==='produk' ? '' : 'none';
     document.getElementById('tabSeller').style.display  = tab==='seller' ? '' : 'none';
+    if (tab==='seller') renderMyProducts();
   };
 
   window.openSeller = function() {
@@ -558,44 +693,102 @@
 
   window.handleUpload = function(input) {
     const file = input.files[0]; if (!file) return;
+
+    // Validasi ukuran file (max 5MB sebelum kompres)
+    if (file.size > 5 * 1024 * 1024) {
+      showNotif('⚠️ Ukuran foto maksimal 5MB', true); return;
+    }
+
     const reader = new FileReader();
     reader.onload = e => {
-      document.getElementById('previewImg').src = e.target.result;
-      document.getElementById('previewImg').style.display = 'block';
-      document.getElementById('uploadArea').style.display = 'none';
+      // Kompres gambar pakai canvas supaya < 500KB
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        // Max 600px lebar/tinggi
+        const MAX = 600;
+        let w = img.width, h = img.height;
+        if (w > MAX || h > MAX) {
+          if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+          else       { w = Math.round(w * MAX / h); h = MAX; }
+        }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        // Kompres ke JPEG quality 0.7
+        const compressed = canvas.toDataURL('image/jpeg', 0.7);
+        const kb = Math.round(compressed.length * 0.75 / 1024);
+        console.log(`Foto dikompres: ${kb}KB`);
+
+        if (kb > 900) {
+          // Kompres lebih agresif kalau masih besar
+          const compressed2 = canvas.toDataURL('image/jpeg', 0.4);
+          document.getElementById('previewImg').src = compressed2;
+        } else {
+          document.getElementById('previewImg').src = compressed;
+        }
+        document.getElementById('previewImg').style.display = 'block';
+        document.getElementById('uploadArea').style.display = 'none';
+        showNotif('📷 Foto berhasil diupload & dikompres');
+      };
+      img.src = e.target.result;
     };
     reader.readAsDataURL(file);
   };
 
   window.submitProduct = async function() {
     if (!requireAuth('Masuk dulu untuk mempublikasikan produk.','seller')) return;
-    const name  = document.getElementById('sellerName').value.trim();
-    const price = +document.getElementById('sellerPrice').value;
-    const cat   = document.getElementById('sellerCat').value;
-    const desc  = document.getElementById('sellerDesc').value.trim();
-    const imgEl = document.getElementById('previewImg');
-    const img   = imgEl.src?.startsWith('data:') ? imgEl.src : '';
+    const name   = document.getElementById('sellerName').value.trim();
+    const price  = +document.getElementById('sellerPrice').value;
+    const cat    = document.getElementById('sellerCat').value;
+    const desc   = document.getElementById('sellerDesc').value.trim();
+    const imgEl  = document.getElementById('previewImg');
+    const img    = imgEl.src?.startsWith('data:') ? imgEl.src : (imgEl.src || '');
+    const editId = document.getElementById('sellerForm').dataset.editId;
 
     if (!name || !price || !desc) { showNotif('⚠️ Isi semua kolom terlebih dahulu', true); return; }
 
-    const newP = { id: Date.now(), name, cat, price, rating:0, sold:0, desc, reviews:[], img };
-    products.unshift(newP);
-    filteredProducts = [...products];
-    filterProducts();
+    if (editId) {
+      // ===== MODE EDIT =====
+      const idx = products.findIndex(x => String(x.id) === String(editId));
+      if (idx !== -1) {
+        products[idx] = { ...products[idx], name, cat, price, desc, img };
+      }
+      filteredProducts = [...products];
+      filterProducts();
 
-    // Simpan ke Firestore
-    await saveProductToFirestore(newP);
+      // Update di Firestore kalau produk dari Firestore (id bukan angka)
+      if (isNaN(editId)) {
+        try {
+          await updateDoc(doc(db, 'products', editId), { name, cat, price, desc, img });
+          showNotif('✅ Produk berhasil diupdate!');
+        } catch(e) {
+          showNotif('⚠️ Update lokal berhasil tapi gagal di cloud: ' + e.message, true);
+        }
+      } else {
+        showNotif('✅ Produk berhasil diupdate!');
+      }
 
-    // Reset form
-    document.getElementById('sellerName').value = '';
-    document.getElementById('sellerPrice').value = '';
-    document.getElementById('sellerDesc').value = '';
-    imgEl.style.display = 'none';
-    document.getElementById('uploadArea').style.display = 'block';
-    document.getElementById('fileInput').value = '';
+      // Reset mode edit
+      cancelEdit();
+    } else {
+      // ===== MODE TAMBAH BARU =====
+      const newP = { id: Date.now(), name, cat, price, rating:0, sold:0, desc, reviews:[], img };
+      products.unshift(newP);
+      filteredProducts = [...products];
+      filterProducts();
+      await saveProductToFirestore(newP);
+
+      // Reset form
+      document.getElementById('sellerName').value  = '';
+      document.getElementById('sellerPrice').value = '';
+      document.getElementById('sellerDesc').value  = '';
+      imgEl.style.display = 'none';
+      document.getElementById('uploadArea').style.display = 'block';
+      document.getElementById('fileInput').value = '';
+      showNotif('✅ Produk berhasil dipublikasikan!');
+    }
 
     switchTab('produk', document.querySelectorAll('.tab')[0]);
-    showNotif('✅ Produk berhasil dipublikasikan!');
   };
 
   // =====================
@@ -707,6 +900,20 @@
   .product-price{font-size:15px;font-weight:600;color:#3b82f6;margin-bottom:6px}
   .product-meta{font-size:12px;color:#888;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
   .stars{color:#f59e0b;font-size:12px}
+  /* Owner actions di kartu produk */
+  .owner-actions{position:absolute;top:6px;right:6px;display:flex;gap:4px;opacity:0;transition:opacity .2s}
+  .product-card:hover .owner-actions{opacity:1}
+  .owner-btn{width:28px;height:28px;border-radius:6px;border:none;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+  .edit-btn{background:rgba(79,70,229,.85);color:#fff}
+  .edit-btn:hover{background:#4f46e5}
+  .del-btn-card{background:rgba(239,68,68,.85);color:#fff}
+  .del-btn-card:hover{background:#ef4444}
+  /* Badge "Produk saya" */
+  .my-badge{position:absolute;top:6px;left:6px;background:rgba(79,70,229,.85);color:#fff;font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;backdrop-filter:blur(4px)}
+  /* Tombol batal edit */
+  .cancel-edit-btn{width:100%;padding:10px;background:#f5f5f5;color:#888;border:1px solid #ddd;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;margin-bottom:8px;display:none}
+  .cancel-edit-btn:hover{background:#eee;color:#1a1a1a}
+  .cancel-edit-btn:hover{background:#eee;color:#1a1a1a}
   .add-cart-btn{width:100%;padding:7px;border-radius:8px;border:1px solid #93c5fd;background:#eff6ff;color:#3b82f6;font-size:13px;cursor:pointer;font-weight:500;display:flex;align-items:center;justify-content:center;gap:5px;transition:all .2s;position:relative;overflow:hidden}
   .add-cart-btn:hover{background:#3b82f6;color:#fff;transform:translateY(-1px);box-shadow:0 4px 12px rgba(59,130,246,.3)}
   .add-cart-btn:active{transform:translateY(0)}
@@ -913,22 +1120,31 @@
     </div>
     <div id="tabProduk"><div class="product-grid" id="productGrid"></div></div>
     <div id="tabSeller" style="display:none;max-width:500px">
-      <div class="section-title">Upload produk baru</div>
-      <div class="form-row">
-        <label>Foto produk</label>
-        <div class="upload-area" onclick="triggerUpload()" id="uploadArea">
-          📷<br><br>Klik untuk upload foto produk
-          <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleUpload(this)">
+      <div class="section-title" id="sellerTitle">Upload produk baru</div>
+      <div id="sellerForm" data-edit-id="">
+        <div class="form-row">
+          <label>Foto produk</label>
+          <div class="upload-area" onclick="triggerUpload()" id="uploadArea">
+            📷<br><br>Klik untuk upload foto produk
+            <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleUpload(this)">
+          </div>
+          <img id="previewImg" style="display:none;width:100%;height:160px;object-fit:cover;border-radius:8px;margin-top:8px">
         </div>
-        <img id="previewImg" style="display:none;width:100%;height:160px;object-fit:cover;border-radius:8px;margin-top:8px">
+        <div class="form-row"><label>Nama produk</label><input type="text" id="sellerName" placeholder="Contoh: Sepatu Lari Pro"></div>
+        <div class="form-row"><label>Kategori</label>
+          <select id="sellerCat"><option>Elektronik</option><option>Fashion</option><option>Makanan</option><option>Olahraga</option><option>Rumah</option></select>
+        </div>
+        <div class="form-row"><label>Harga (Rp)</label><input type="number" id="sellerPrice" placeholder="150000"></div>
+        <div class="form-row"><label>Deskripsi produk</label><textarea id="sellerDesc" placeholder="Jelaskan produk Anda secara detail..."></textarea></div>
+        <button class="cancel-edit-btn" id="cancelEditBtn" onclick="cancelEdit()">↩️ Batal edit</button>
+        <button class="submit-btn" id="submitBtn" onclick="submitProduct()">✅ Publikasikan produk</button>
       </div>
-      <div class="form-row"><label>Nama produk</label><input type="text" id="sellerName" placeholder="Contoh: Sepatu Lari Pro"></div>
-      <div class="form-row"><label>Kategori</label>
-        <select id="sellerCat"><option>Elektronik</option><option>Fashion</option><option>Makanan</option><option>Olahraga</option><option>Rumah</option></select>
+
+      <!-- Daftar produk milik seller -->
+      <div id="myProductsSection" style="margin-top:28px">
+        <div style="font-size:14px;font-weight:600;margin-bottom:12px;color:#1a1a1a">📦 Produk saya</div>
+        <div id="myProductsList"></div>
       </div>
-      <div class="form-row"><label>Harga (Rp)</label><input type="number" id="sellerPrice" placeholder="150000"></div>
-      <div class="form-row"><label>Deskripsi produk</label><textarea id="sellerDesc" placeholder="Jelaskan produk Anda secara detail..."></textarea></div>
-      <button class="submit-btn" onclick="submitProduct()">✅ Publikasikan produk</button>
     </div>
   </div>
 </div>
