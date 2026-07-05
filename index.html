@@ -279,21 +279,34 @@
     // Tampilkan data default dulu supaya tidak kosong
     filteredProducts = [...products];
     renderGrid();
-    // Lalu coba load dari Firestore
+
+    // Load produk seller dari Firestore (tersimpan permanen)
     try {
       const snap = await getDocs(collection(db, 'products'));
       if (!snap.empty) {
-        const firestoreProducts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        // Gabungkan: Firestore produk + default produk (hindari duplikat nama)
-        const firestoreNames = firestoreProducts.map(p => p.name);
-        const defaultOnly = products.filter(p => !firestoreNames.includes(p.name));
+        const firestoreProducts = snap.docs.map(d => ({
+          id: d.id,
+          ...d.data(),
+          // Pastikan field penting ada
+          rating: d.data().rating || 0,
+          sold:   d.data().sold   || 0,
+          reviews:d.data().reviews|| [],
+          img:    d.data().img    || '',
+        }));
+
+        // Gabungkan: produk Firestore di atas, default di bawah
+        // Hindari duplikat nama
+        const firestoreNames = firestoreProducts.map(p => p.name.toLowerCase());
+        const defaultOnly = DEFAULT_PRODUCTS.filter(
+          p => !firestoreNames.includes(p.name.toLowerCase())
+        );
         products = [...firestoreProducts, ...defaultOnly];
         filteredProducts = [...products];
         renderGrid();
+        console.log(`✅ Load ${firestoreProducts.length} produk dari Firestore + ${defaultOnly.length} default`);
       }
     } catch(e) {
       console.warn('Firestore error:', e.message);
-      // Tetap pakai data default yang sudah dirender
     }
   }
 
@@ -302,15 +315,19 @@
   // =====================
   async function saveProductToFirestore(p) {
     try {
-      await addDoc(collection(db, 'products'), {
+      const docRef = await addDoc(collection(db, 'products'), {
         name: p.name, cat: p.cat, price: p.price,
         desc: p.desc, img: p.img || '',
         rating: 0, sold: 0, reviews: [],
         createdBy: currentUser.uid,
         createdAt: serverTimestamp()
       });
+      // Update id lokal dengan id Firestore supaya konsisten
+      p.firestoreId = docRef.id;
+      console.log('Produk tersimpan di Firestore:', docRef.id);
     } catch(e) {
       console.warn('Firestore save failed:', e.message);
+      showNotif('⚠️ Produk tampil lokal tapi gagal tersimpan ke cloud', true);
     }
   }
 
@@ -335,7 +352,9 @@
             <span class="stars">${stars(p.rating)} <span style="color:#888">${p.rating}</span></span>
             <span>${(p.sold||0).toLocaleString('id-ID')} terjual</span>
           </div>
-          <button class="add-cart-btn" onclick="event.stopPropagation();addToCart('${p.id}')">+ Tambah</button>
+          <button class="add-cart-btn" id="btn-${p.id}" onclick="event.stopPropagation();addToCartAnimated('${p.id}',this)">
+            <span class="btn-icon">🛒</span> <span class="btn-label">Tambah</span>
+          </button>
         </div>
       </div>`).join('');
   };
@@ -374,6 +393,41 @@
     if (ex) ex.qty++; else cart.push({...p, qty:1});
     updateCartUI();
     showNotif('🛒 ' + p.name + ' ditambahkan ke keranjang');
+  };
+
+  window.addToCartAnimated = function(id, btn) {
+    if (!requireAuth('Masuk dulu untuk menambahkan produk ke keranjang.','cart')) return;
+    // Cek apakah sedang loading
+    if (btn.classList.contains('loading')) return;
+
+    const p  = products.find(x => String(x.id)===String(id));
+    const ex = cart.find(x => String(x.id)===String(id));
+
+    // Animasi loading
+    btn.classList.add('loading');
+    btn.querySelector('.btn-icon').textContent = '⏳';
+    btn.querySelector('.btn-label').textContent = 'Menambahkan...';
+    btn.disabled = true;
+
+    setTimeout(() => {
+      if (ex) ex.qty++; else cart.push({...p, qty:1});
+      updateCartUI();
+
+      // Animasi sukses
+      btn.classList.remove('loading');
+      btn.classList.add('added');
+      btn.querySelector('.btn-icon').textContent = '✅';
+      btn.querySelector('.btn-label').textContent = 'Ditambahkan!';
+
+      setTimeout(() => {
+        btn.classList.remove('added');
+        btn.querySelector('.btn-icon').textContent = '🛒';
+        btn.querySelector('.btn-label').textContent = ex ? `Tambah lagi (${ex.qty})` : 'Tambah';
+        btn.disabled = false;
+      }, 1500);
+
+      showNotif('🛒 ' + p.name + ' ditambahkan ke keranjang');
+    }, 600);
   };
 
   window.removeFromCart = id => { cart = cart.filter(x=>String(x.id)!==String(id)); updateCartUI(); };
@@ -653,8 +707,15 @@
   .product-price{font-size:15px;font-weight:600;color:#3b82f6;margin-bottom:6px}
   .product-meta{font-size:12px;color:#888;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
   .stars{color:#f59e0b;font-size:12px}
-  .add-cart-btn{width:100%;padding:7px;border-radius:8px;border:1px solid #93c5fd;background:#eff6ff;color:#3b82f6;font-size:13px;cursor:pointer;font-weight:500}
-  .add-cart-btn:hover{background:#3b82f6;color:#fff}
+  .add-cart-btn{width:100%;padding:7px;border-radius:8px;border:1px solid #93c5fd;background:#eff6ff;color:#3b82f6;font-size:13px;cursor:pointer;font-weight:500;display:flex;align-items:center;justify-content:center;gap:5px;transition:all .2s;position:relative;overflow:hidden}
+  .add-cart-btn:hover{background:#3b82f6;color:#fff;transform:translateY(-1px);box-shadow:0 4px 12px rgba(59,130,246,.3)}
+  .add-cart-btn:active{transform:translateY(0)}
+  .add-cart-btn.loading{background:#f5f5f5;border-color:#ddd;color:#888;cursor:not-allowed}
+  .add-cart-btn.added{background:#dcfce7;border-color:#86efac;color:#16a34a}
+  .add-cart-btn .btn-icon{font-size:14px;transition:transform .2s}
+  .add-cart-btn:hover .btn-icon{transform:scale(1.2)}
+  .add-cart-btn.added .btn-icon{animation:pop .3s ease}
+  @keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.4)}100%{transform:scale(1)}}
   .panel{position:fixed;top:0;right:0;bottom:0;width:380px;background:#fff;border-left:1px solid #e5e5e5;z-index:200;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .25s}
   .panel.open{transform:translateX(0)}
   .panel-head{padding:16px 20px;border-bottom:1px solid #e5e5e5;display:flex;justify-content:space-between;align-items:center}
