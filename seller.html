@@ -236,7 +236,7 @@ body{font-family:system-ui,sans-serif;background:#f5f5f5;color:#1a1a1a}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, getDocs, addDoc, deleteDoc, updateDoc, doc, serverTimestamp, query, where }
+import { getFirestore, collection, getDocs, addDoc, deleteDoc, updateDoc, doc, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, signOut, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -272,6 +272,7 @@ onAuthStateChanged(auth, async user => {
   await loadMyProducts();
   updateStats();
   renderRecentProducts();
+  renderProductTable();
 });
 
 window.logout = async () => { await signOut(auth); window.location.href='auth.html'; };
@@ -279,15 +280,26 @@ window.logout = async () => { await signOut(auth); window.location.href='auth.ht
 // ---- Load produk milik seller ini ----
 async function loadMyProducts() {
   try {
-    const q    = query(collection(db,'products'), where('createdBy','==',currentUser.uid));
-    const snap = await getDocs(q);
-    myProducts = snap.docs.map(d => ({id:d.id,...d.data()}));
+    // Load semua produk lalu filter by uid (hindari butuh Firestore index)
+    const snap = await getDocs(collection(db,'products'));
+    myProducts = snap.docs
+      .map(d => ({
+        id:      d.id,
+        name:    d.data().name    || '',
+        cat:     d.data().cat     || '',
+        price:   d.data().price   || 0,
+        desc:    d.data().desc    || '',
+        img:     d.data().img     || '',
+        rating:  d.data().rating  || 0,
+        sold:    d.data().sold    || 0,
+        reviews: d.data().reviews || [],
+        createdBy: d.data().createdBy || '',
+      }))
+      .filter(p => p.createdBy === currentUser.uid);
+    console.log('Produk saya:', myProducts.length);
   } catch(e) {
-    // Fallback: load semua lalu filter
-    try {
-      const snap = await getDocs(collection(db,'products'));
-      myProducts = snap.docs.map(d=>({id:d.id,...d.data()})).filter(p=>p.createdBy===currentUser.uid);
-    } catch(e2) { myProducts=[]; }
+    console.warn('loadMyProducts error:', e.message);
+    myProducts = [];
   }
 }
 
@@ -398,28 +410,38 @@ window.submitProduct = async function() {
   try {
     if(editId) {
       // UPDATE
+      console.log('Update produk:', editId);
       await updateDoc(doc(db,'products',editId),{name,cat,price,desc,img});
       const idx=myProducts.findIndex(p=>p.id===editId);
       if(idx!==-1) myProducts[idx]={...myProducts[idx],name,cat,price,desc,img};
-      showNotif('Produk berhasil diupdate!');
+      showNotif('✅ Produk berhasil diupdate!');
       cancelEdit();
     } else {
       // TAMBAH BARU
+      console.log('Tambah produk baru, uid:', currentUser.uid);
       const docRef=await addDoc(collection(db,'products'),{
         name,cat,price,desc,img,
         rating:0,sold:0,reviews:[],
-        createdBy:currentUser.uid,
-        createdAt:serverTimestamp()
+        createdBy: currentUser.uid,
+        createdAt: serverTimestamp()
       });
+      console.log('Produk tersimpan:', docRef.id);
       myProducts.unshift({id:docRef.id,name,cat,price,desc,img,rating:0,sold:0,reviews:[],createdBy:currentUser.uid});
-      showNotif('Produk berhasil dipublikasikan!');
+      showNotif('✅ Produk berhasil dipublikasikan!');
       resetForm();
     }
     updateStats();
     renderRecentProducts();
+    renderProductTable();
   } catch(e){
-    showNotif('Gagal menyimpan: '+e.message,true);
+    console.error('submitProduct error:', e);
+    if(e.code==='permission-denied'){
+      showNotif('❌ Akses ditolak — pastikan sudah login sebagai seller',true);
+    } else {
+      showNotif('❌ Gagal menyimpan: '+e.message,true);
+    }
   } finally {
+    btn.textContent = editId ? '💾 Simpan Perubahan' : '✅ Publikasikan';
     btn.disabled=false;
   }
 };
