@@ -143,14 +143,62 @@ const auth = getAuth(app);
 
 let selectedRole = 'buyer';
 
-// Cek kalau sudah login → redirect langsung
+// Cek kalau sudah login → tampilkan opsi ganti role atau redirect
 onAuthStateChanged(auth, async user => {
   if (user) {
     showLoading(true);
-    const role = await getUserRole(user.uid);
-    redirectByRole(role);
+    const snap = await getDoc(doc(db, 'users', user.uid));
+    if (!snap.exists()) {
+      // Belum ada role → tampilkan pilih role
+      showLoading(false);
+      showRoleModal(user);
+    } else {
+      const role = snap.data().role || 'buyer';
+      // Tampilkan info sudah login + tombol ganti role
+      showLoading(false);
+      showAlreadyLoggedIn(user, role);
+    }
   }
 });
+
+function showAlreadyLoggedIn(user, role) {
+  const name = user.displayName || user.email || 'Pengguna';
+  document.querySelector('.card-body').innerHTML = `
+    <div style="text-align:center;padding:10px 0">
+      <div style="font-size:40px;margin-bottom:12px">${role==='seller'?'🏪':'🛒'}</div>
+      <div style="font-size:16px;font-weight:700;margin-bottom:4px">Halo, ${name.split(' ')[0]}!</div>
+      <div style="font-size:13px;color:#888;margin-bottom:20px">Kamu login sebagai <strong>${role==='seller'?'Penjual':'Pembeli'}</strong></div>
+      <button onclick="window.location.href='${role==='seller'?'seller.html':'index.html'}'" 
+        style="width:100%;padding:12px;background:#4f46e5;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:10px">
+        ${role==='seller'?'🏪 Masuk Dashboard Seller':'🛒 Masuk Halaman Belanja'}
+      </button>
+      <button onclick="switchRole('${user.uid}','${role==='seller'?'buyer':'seller'}')" 
+        style="width:100%;padding:12px;background:#f5f5f5;color:#555;border:1px solid #ddd;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;margin-bottom:10px">
+        Ganti ke ${role==='seller'?'🛒 Mode Pembeli':'🏪 Mode Penjual'}
+      </button>
+      <button onclick="doLogout()" 
+        style="width:100%;padding:10px;background:none;color:#ef4444;border:none;font-size:13px;cursor:pointer">
+        🚪 Logout
+      </button>
+    </div>`;
+}
+
+window.switchRole = async function(uid, newRole) {
+  showLoading(true);
+  try {
+    await setDoc(doc(db, 'users', uid), { role: newRole }, { merge: true });
+    redirectByRole(newRole);
+  } catch(e) {
+    showLoading(false);
+    alert('Gagal ganti role: ' + e.message);
+  }
+};
+
+window.doLogout = async function() {
+  const { signOut } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
+  await signOut(auth);
+  window.location.reload();
+};
 
 async function getUserRole(uid) {
   try {
