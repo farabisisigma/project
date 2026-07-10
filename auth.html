@@ -188,14 +188,17 @@ window.switchRole = async () => {
   const newRole = currentRole==='seller' ? 'buyer' : 'seller';
   load(true);
   try {
-    await setDoc(doc(db,'users',currentUser.uid), { role: newRole }, { merge: true });
-    currentRole = newRole;
-    load(false);
-    showLoggedIn(currentUser, newRole);
-    setTimeout(() => { window.location.href = newRole==='seller' ? 'seller.html' : 'index.html'; }, 800);
+    const name = currentUser.displayName || currentUser.email || 'Pengguna';
+    await setDoc(doc(db,'users',currentUser.uid), {
+      role: newRole,
+      name: name,
+      email: currentUser.email || ''
+    }, { merge: true });
+    // Langsung redirect tanpa tunggu
+    window.location.href = newRole==='seller' ? 'seller.html' : 'index.html';
   } catch(e) {
     load(false);
-    err('Gagal ganti role: ' + e.message);
+    alert('Gagal ganti role: ' + e.message);
   }
 };
 
