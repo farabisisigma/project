@@ -317,7 +317,10 @@ function updateStats() {
 // ---- Render recent (dashboard) ----
 function renderRecentProducts() {
   const el = document.getElementById('recentProducts');
-  if (!myProducts.length) { el.innerHTML='<div class="empty-state">Belum ada produk. <a onclick="showPage('tambah',null)" style="color:#d97706;cursor:pointer;font-weight:500">Tambah sekarang</a></div>'; return; }
+  if (!myProducts.length) {
+    el.innerHTML = '<div class="empty-state">Belum ada produk — klik Tambah Produk di sidebar.</div>';
+    return;
+  }
   const recent = [...myProducts].slice(0,4);
   el.innerHTML = `<div class="product-table">
     <div class="table-head"><div>Foto</div><div>Nama</div><div>Kategori</div><div>Harga</div><div>Terjual</div><div>Aksi</div></div>
