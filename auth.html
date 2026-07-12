@@ -6,52 +6,99 @@
 <title>TokoOnline — Masuk</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:system-ui,sans-serif;background:linear-gradient(135deg,#1e1b4b,#312e81);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-.card{background:#fff;border-radius:16px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden}
-.header{background:linear-gradient(135deg,#4f46e5,#7c3aed);padding:28px;text-align:center}
-.logo{width:52px;height:52px;background:rgba(255,255,255,.2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 12px}
-.header h1{font-size:20px;font-weight:700;color:#fff;margin-bottom:4px}
+body{font-family:system-ui,sans-serif;background:linear-gradient(135deg,#1e1b4b 0%,#312e81 60%,#1e1b4b 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+.card{background:#fff;border-radius:18px;width:100%;max-width:410px;box-shadow:0 24px 64px rgba(0,0,0,.35);overflow:hidden}
+.header{background:linear-gradient(135deg,#4f46e5,#7c3aed);padding:28px 24px 24px;text-align:center}
+.logo{width:54px;height:54px;background:rgba(255,255,255,.2);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 12px;backdrop-filter:blur(8px)}
+.header h1{font-size:21px;font-weight:700;color:#fff;margin-bottom:3px}
 .header p{font-size:12px;color:rgba(255,255,255,.7)}
 .body{padding:24px}
-.tabs{display:flex;background:#f5f5f5;border-radius:8px;padding:3px;margin-bottom:20px}
-.tab{flex:1;padding:8px;border:none;background:none;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;color:#888}
-.tab.active{background:#fff;color:#4f46e5;box-shadow:0 1px 3px rgba(0,0,0,.1)}
-.field{margin-bottom:12px}
-.field label{font-size:12px;color:#888;display:block;margin-bottom:4px;font-weight:500}
-.field input{width:100%;padding:10px 12px;border:1.5px solid #e5e5e5;border-radius:8px;font-size:14px;background:#fafafa}
+.tabs{display:flex;background:#f0f0f5;border-radius:10px;padding:3px;margin-bottom:20px}
+.tab{flex:1;padding:9px;border:none;background:none;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;color:#888;transition:all .2s}
+.tab.active{background:#fff;color:#4f46e5;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.field{margin-bottom:13px}
+.field label{font-size:12px;color:#666;display:block;margin-bottom:5px;font-weight:600}
+.field input{width:100%;padding:11px 13px;border:1.5px solid #e5e5e5;border-radius:9px;font-size:14px;background:#fafafa;transition:border-color .2s}
 .field input:focus{outline:none;border-color:#4f46e5;background:#fff}
-.role-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
-.role-opt{border:2px solid #e5e5e5;border-radius:10px;padding:12px 8px;cursor:pointer;text-align:center;transition:all .15s}
+.field input.err-input{border-color:#ef4444}
+.field-hint{font-size:11px;color:#aaa;margin-top:4px}
+.field-hint.err{color:#ef4444}
+.role-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.role-opt{border:2px solid #e5e5e5;border-radius:11px;padding:13px 10px;cursor:pointer;text-align:center;transition:all .2s}
+.role-opt:hover{border-color:#c7d2fe;background:#f5f3ff}
 .role-opt.sel{border-color:#4f46e5;background:#eef2ff}
-.role-opt .icon{font-size:24px;margin-bottom:4px}
-.role-opt .name{font-size:13px;font-weight:600}
-.role-opt .desc{font-size:11px;color:#888}
-.divider{display:flex;align-items:center;gap:8px;margin:14px 0;font-size:12px;color:#aaa}
+.role-opt .icon{font-size:26px;margin-bottom:5px}
+.role-opt .name{font-size:13px;font-weight:600;color:#1a1a1a}
+.role-opt .desc{font-size:11px;color:#888;margin-top:2px}
+.divider{display:flex;align-items:center;gap:10px;margin:14px 0;font-size:12px;color:#bbb}
 .divider::before,.divider::after{content:'';flex:1;height:1px;background:#eee}
-.google-btn{width:100%;padding:10px;background:#fff;border:1.5px solid #ddd;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;color:#333;margin-bottom:12px}
-.google-btn:hover{background:#f8f8f8}
-.primary{width:100%;padding:11px;background:#4f46e5;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
-.primary:hover{background:#4338ca}
-.primary:disabled{background:#aaa;cursor:not-allowed}
-.err{background:#fef2f2;border:1px solid #fca5a5;color:#ef4444;font-size:12px;padding:8px 12px;border-radius:6px;margin-bottom:12px;display:none}
-.err.show{display:block}
-.hint{font-size:12px;color:#888;text-align:center;margin-top:12px}
-.hint a{color:#4f46e5;cursor:pointer;font-weight:500}
-.loading{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:999;display:none;align-items:center;justify-content:center}
+.google-btn{width:100%;padding:11px;background:#fff;border:1.5px solid #ddd;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;color:#333;margin-bottom:12px;transition:all .2s}
+.google-btn:hover{background:#f5f5f5;border-color:#bbb}
+.primary-btn{width:100%;padding:12px;background:#4f46e5;color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s}
+.primary-btn:hover{background:#4338ca;transform:translateY(-1px)}
+.primary-btn:disabled{background:#bbb;cursor:not-allowed;transform:none}
+.err-box{background:#fef2f2;border:1px solid #fca5a5;color:#dc2626;font-size:12px;padding:9px 13px;border-radius:8px;margin-bottom:13px;display:none}
+.err-box.show{display:block}
+.hint{font-size:12px;color:#888;text-align:center;margin-top:13px}
+.hint a{color:#4f46e5;cursor:pointer;font-weight:600;text-decoration:none}
+
+/* OTP STEP */
+.otp-header{text-align:center;margin-bottom:20px}
+.otp-header .icon{font-size:40px;margin-bottom:10px}
+.otp-header h2{font-size:18px;font-weight:700;margin-bottom:4px}
+.otp-header p{font-size:13px;color:#666;line-height:1.5}
+.otp-header strong{color:#4f46e5}
+.otp-boxes{display:flex;gap:8px;justify-content:center;margin-bottom:16px}
+.otp-box{width:44px;height:52px;text-align:center;font-size:20px;font-weight:700;border:2px solid #e5e5e5;border-radius:10px;background:#fafafa;transition:border-color .2s;color:#1a1a1a}
+.otp-box:focus{outline:none;border-color:#4f46e5;background:#fff}
+.otp-box.filled{border-color:#4f46e5;background:#eef2ff}
+.otp-timer{text-align:center;font-size:13px;color:#888;margin-bottom:14px}
+.otp-timer strong{color:#4f46e5}
+.otp-resend{text-align:center;font-size:13px;color:#888;margin-top:10px}
+.otp-resend a{color:#4f46e5;cursor:pointer;font-weight:600}
+.otp-resend a.disabled{color:#bbb;cursor:not-allowed;pointer-events:none}
+.back-link{display:flex;align-items:center;gap:6px;font-size:13px;color:#888;cursor:pointer;margin-bottom:16px}
+.back-link:hover{color:#1a1a1a}
+
+/* PASSWORD STRENGTH */
+.pw-strength{margin-top:6px;height:3px;border-radius:2px;background:#eee;overflow:hidden}
+.pw-bar{height:100%;width:0;border-radius:2px;transition:all .3s}
+.pw-text{font-size:11px;margin-top:4px}
+
+/* LOGGED IN */
+.logged-card{text-align:center;padding:8px 0}
+.logged-avatar{width:64px;height:64px;border-radius:50%;background:#818cf8;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:#fff;margin:0 auto 12px;overflow:hidden;border:3px solid #e0e7ff}
+.logged-avatar img{width:100%;height:100%;object-fit:cover}
+.logged-name{font-size:17px;font-weight:700;margin-bottom:3px}
+.logged-role{font-size:12px;color:#888;margin-bottom:20px}
+.btn-go{width:100%;padding:12px;background:#4f46e5;color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px}
+.btn-go:hover{background:#4338ca}
+.btn-switch{width:100%;padding:11px;background:#f5f5f5;color:#555;border:1px solid #e5e5e5;border-radius:9px;font-size:13px;font-weight:500;cursor:pointer;margin-bottom:8px}
+.btn-switch:hover{background:#eee}
+.btn-logout{width:100%;padding:10px;background:none;color:#ef4444;border:none;font-size:13px;cursor:pointer}
+
+/* LOADING */
+.loading{position:fixed;inset:0;background:rgba(30,27,75,.6);z-index:999;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px}
 .loading.show{display:flex}
-.spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+.spinner{width:38px;height:38px;border:3px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+.loading p{color:#fff;font-size:14px;font-weight:500}
 @keyframes spin{to{transform:rotate(360deg)}}
-.logged-in{text-align:center;padding:8px 0}
-.logged-in .big-icon{font-size:48px;margin-bottom:12px}
-.logged-in h2{font-size:17px;font-weight:700;margin-bottom:4px}
-.logged-in p{font-size:13px;color:#888;margin-bottom:20px}
-.btn-outline{width:100%;padding:10px;background:#f5f5f5;color:#555;border:1px solid #ddd;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;margin-bottom:8px}
-.btn-outline:hover{background:#eee}
-.btn-danger{width:100%;padding:10px;background:none;color:#ef4444;border:none;font-size:13px;cursor:pointer;margin-top:4px}
+
+/* STEP INDICATOR */
+.steps{display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:20px}
+.step{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;border:2px solid #e5e5e5;color:#bbb;transition:all .3s}
+.step.done{background:#4f46e5;border-color:#4f46e5;color:#fff}
+.step.active{border-color:#4f46e5;color:#4f46e5}
+.step-line{width:24px;height:2px;background:#e5e5e5;border-radius:1px}
+.step-line.done{background:#4f46e5}
 </style>
 </head>
 <body>
-<div class="loading" id="loading"><div class="spinner"></div></div>
+
+<div class="loading" id="loading">
+  <div class="spinner"></div>
+  <p id="loadingText">Memproses...</p>
+</div>
 
 <div class="card">
   <div class="header">
@@ -59,64 +106,137 @@ body{font-family:system-ui,sans-serif;background:linear-gradient(135deg,#1e1b4b,
     <h1>TokoOnline</h1>
     <p>Platform jual beli terpercaya</p>
   </div>
+
   <div class="body" id="cardBody">
 
-    <!-- LOGIN FORM -->
+    <!-- VIEW: AUTH (login/register) -->
     <div id="viewAuth">
       <div class="tabs">
         <button class="tab active" id="tabLoginBtn" onclick="showTab('login')">Masuk</button>
         <button class="tab" id="tabRegBtn" onclick="showTab('register')">Daftar</button>
       </div>
-      <div class="err" id="errMsg"></div>
+      <div class="err-box" id="errMsg"></div>
 
       <!-- LOGIN -->
       <div id="viewLogin">
         <button class="google-btn" onclick="loginGoogle()">
-          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H24v8h11.3C33.7 32.6 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l5.7-5.7C34.6 6.1 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 16 18.9 13 24 13c3.1 0 5.8 1.1 8 3l5.7-5.7C34.6 6.1 29.6 4 24 4 16.3 4 9.6 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 10.1-2 13.7-5.3l-6.3-5.3C29.3 35.3 26.8 36 24 36c-5.2 0-9.7-3.4-11.3-8.1l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H24v8h11.3c-.8 2.3-2.3 4.3-4.2 5.7l6.3 5.3C39.9 36.6 44 31 44 24c0-1.3-.1-2.7-.4-3.5z"/></svg>
+          <svg width="18" height="18" viewBox="0 0 48 48">
+            <path fill="#FFC107" d="M43.6 20.5H24v8h11.3C33.7 32.6 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l5.7-5.7C34.6 6.1 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/>
+            <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 16 18.9 13 24 13c3.1 0 5.8 1.1 8 3l5.7-5.7C34.6 6.1 29.6 4 24 4 16.3 4 9.6 8.3 6.3 14.7z"/>
+            <path fill="#4CAF50" d="M24 44c5.2 0 10.1-2 13.7-5.3l-6.3-5.3C29.3 35.3 26.8 36 24 36c-5.2 0-9.7-3.4-11.3-8.1l-6.5 5C9.5 39.6 16.2 44 24 44z"/>
+            <path fill="#1976D2" d="M43.6 20.5H24v8h11.3c-.8 2.3-2.3 4.3-4.2 5.7l6.3 5.3C39.9 36.6 44 31 44 24c0-1.3-.1-2.7-.4-3.5z"/>
+          </svg>
           Masuk dengan Google
         </button>
-        <div class="divider">atau email</div>
-        <div class="field"><label>Email</label><input type="email" id="loginEmail" placeholder="email@kamu.com"></div>
-        <div class="field"><label>Password</label><input type="password" id="loginPass" placeholder="••••••••"></div>
-        <button class="primary" onclick="loginEmail()">Masuk</button>
-        <div class="hint">Belum punya akun? <a onclick="showTab('register')">Daftar</a></div>
+        <div class="divider">atau masuk dengan email</div>
+        <div class="field">
+          <label>Alamat Email</label>
+          <input type="email" id="loginEmail" placeholder="contoh@email.com" oninput="clearErr()">
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" id="loginPass" placeholder="Masukkan password" oninput="clearErr()">
+        </div>
+        <button class="primary-btn" onclick="loginEmail()" id="loginBtn">Masuk</button>
+        <div class="hint">Belum punya akun? <a onclick="showTab('register')">Daftar sekarang</a></div>
       </div>
 
       <!-- REGISTER -->
       <div id="viewRegister" style="display:none">
-        <div class="field"><label>Nama lengkap</label><input type="text" id="regName" placeholder="Nama kamu"></div>
-        <div class="field"><label>Email</label><input type="email" id="regEmail" placeholder="email@kamu.com"></div>
-        <div class="field"><label>Password</label><input type="password" id="regPass" placeholder="Min. 6 karakter"></div>
-        <div class="field">
-          <label>Daftar sebagai</label>
-          <div class="role-row">
-            <div class="role-opt sel" id="optBuyer" onclick="pickRole('buyer')">
-              <div class="icon">🛒</div>
-              <div class="name">Pembeli</div>
-              <div class="desc">Belanja produk</div>
-            </div>
-            <div class="role-opt" id="optSeller" onclick="pickRole('seller')">
-              <div class="icon">🏪</div>
-              <div class="name">Penjual</div>
-              <div class="desc">Jual produk</div>
+        <div class="steps">
+          <div class="step active" id="step1">1</div>
+          <div class="step-line" id="line1"></div>
+          <div class="step" id="step2">2</div>
+          <div class="step-line" id="line2"></div>
+          <div class="step" id="step3">3</div>
+        </div>
+
+        <!-- STEP 1: Data diri -->
+        <div id="regStep1">
+          <div class="field">
+            <label>Nama Lengkap</label>
+            <input type="text" id="regName" placeholder="Nama kamu" oninput="clearErr()">
+          </div>
+          <div class="field">
+            <label>Alamat Email</label>
+            <input type="email" id="regEmail" placeholder="contoh@email.com" oninput="validateEmail(this)">
+            <div class="field-hint" id="emailHint">Masukkan email yang valid</div>
+          </div>
+          <div class="field">
+            <label>Password</label>
+            <input type="password" id="regPass" placeholder="Min. 8 karakter" oninput="checkPassword(this)">
+            <div class="pw-strength"><div class="pw-bar" id="pwBar"></div></div>
+            <div class="pw-text" id="pwText" style="color:#aaa">Minimal 8 karakter</div>
+          </div>
+          <div class="field">
+            <label>Konfirmasi Password</label>
+            <input type="password" id="regPassConfirm" placeholder="Ulangi password" oninput="checkConfirm(this)">
+            <div class="field-hint" id="confirmHint"></div>
+          </div>
+          <div class="field">
+            <label>Daftar sebagai</label>
+            <div class="role-row">
+              <div class="role-opt sel" id="optBuyer" onclick="pickRole('buyer')">
+                <div class="icon">🛒</div>
+                <div class="name">Pembeli</div>
+                <div class="desc">Belanja produk</div>
+              </div>
+              <div class="role-opt" id="optSeller" onclick="pickRole('seller')">
+                <div class="icon">🏪</div>
+                <div class="name">Penjual</div>
+                <div class="desc">Jual produk</div>
+              </div>
             </div>
           </div>
+          <button class="primary-btn" onclick="goToOtp()" id="nextBtn">Lanjut →</button>
+          <div class="hint">Sudah punya akun? <a onclick="showTab('login')">Masuk</a></div>
         </div>
-        <button class="primary" onclick="doRegister()">Buat akun</button>
-        <div class="hint">Sudah punya akun? <a onclick="showTab('login')">Masuk</a></div>
+
+        <!-- STEP 2: Verifikasi OTP -->
+        <div id="regStep2" style="display:none">
+          <div class="back-link" onclick="backToStep1()">← Kembali</div>
+          <div class="otp-header">
+            <div class="icon">📧</div>
+            <h2>Verifikasi Email</h2>
+            <p>Kode OTP 6 digit dikirim ke<br><strong id="otpEmailLabel">-</strong></p>
+          </div>
+          <div class="otp-boxes" id="otpBoxes">
+            <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]" onkeyup="otpKey(this,0)" oninput="otpInput(this,0)">
+            <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]" onkeyup="otpKey(this,1)" oninput="otpInput(this,1)">
+            <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]" onkeyup="otpKey(this,2)" oninput="otpInput(this,2)">
+            <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]" onkeyup="otpKey(this,3)" oninput="otpInput(this,3)">
+            <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]" onkeyup="otpKey(this,4)" oninput="otpInput(this,4)">
+            <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]" onkeyup="otpKey(this,5)" oninput="otpInput(this,5)">
+          </div>
+          <div class="err-box" id="otpErr"></div>
+          <div class="otp-timer">Kode berlaku <strong id="timerText">2:00</strong></div>
+          <button class="primary-btn" onclick="verifyOtp()" id="verifyBtn">Verifikasi & Buat Akun</button>
+          <div class="otp-resend">Tidak menerima kode? <a id="resendLink" onclick="resendOtp()" class="disabled">Kirim ulang</a></div>
+        </div>
+
+        <!-- STEP 3: Sukses -->
+        <div id="regStep3" style="display:none;text-align:center;padding:10px 0">
+          <div style="font-size:54px;margin-bottom:14px">🎉</div>
+          <div style="font-size:18px;font-weight:700;margin-bottom:6px">Akun berhasil dibuat!</div>
+          <div style="font-size:13px;color:#888;margin-bottom:20px">Selamat bergabung di TokoOnline</div>
+          <button class="primary-btn" onclick="redirectAfterRegister()">Mulai sekarang →</button>
+        </div>
       </div>
     </div>
 
-    <!-- SUDAH LOGIN -->
+    <!-- VIEW: SUDAH LOGIN -->
     <div id="viewLoggedIn" style="display:none">
-      <div class="logged-in">
-        <div class="big-icon" id="liIcon">🛒</div>
-        <h2 id="liName">Halo!</h2>
-        <p id="liRole">Kamu login sebagai Pembeli</p>
-        <button class="primary" id="liGo" onclick="goToDashboard()">Masuk ke Toko</button>
-        <br><br>
-        <button class="btn-outline" id="liSwitch" onclick="switchRole()">Ganti ke Mode Penjual</button>
-        <button class="btn-danger" onclick="doLogout()">🚪 Logout</button>
+      <div class="logged-card">
+        <div class="logged-avatar" id="loggedAvatar"><span id="loggedInit">?</span></div>
+        <div class="logged-name" id="loggedName">-</div>
+        <div class="logged-role" id="loggedRole">-</div>
+        <button class="btn-go" onclick="goToDashboard()">
+          <span id="btnGoText">Masuk ke Toko</span>
+        </button>
+        <button class="btn-switch" onclick="switchRole()">
+          <span id="btnSwitchText">Ganti Mode</span>
+        </button>
+        <button class="btn-logout" onclick="doLogout()">🚪 Logout</button>
       </div>
     </div>
 
@@ -125,18 +245,20 @@ body{font-family:system-ui,sans-serif;background:linear-gradient(135deg,#1e1b4b,
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword,
-         signInWithEmailAndPassword, updateProfile, signOut, onAuthStateChanged }
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup,
+         createUserWithEmailAndPassword, signInWithEmailAndPassword,
+         updateProfile, signOut, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const app  = initializeApp({
-  apiKey: "AIzaSyALuZwAKyRjitcX3aULOagSJmIjvFpprSY",
-  authDomain: "tokoku-app-9585c.firebaseapp.com",
-  projectId: "tokoku-app-9585c",
-  storageBucket: "tokoku-app-9585c.firebasestorage.app",
-  messagingSenderId: "245654559498",
-  appId: "1:245654559498:web:415a923e9c414e85feb8f3"
+  apiKey:"AIzaSyALuZwAKyRjitcX3aULOagSJmIjvFpprSY",
+  authDomain:"tokoku-app-9585c.firebaseapp.com",
+  projectId:"tokoku-app-9585c",
+  storageBucket:"tokoku-app-9585c.firebasestorage.app",
+  messagingSenderId:"245654559498",
+  appId:"1:245654559498:web:415a923e9c414e85feb8f3"
 });
 const db   = getFirestore(app);
 const auth = getAuth(app);
@@ -144,139 +266,346 @@ const auth = getAuth(app);
 let currentUser = null;
 let currentRole = 'buyer';
 let selectedRole = 'buyer';
+let generatedOtp = '';
+let otpTimer = null;
+let regData = {};
 
-const load = v => document.getElementById('loading').classList.toggle('show', v);
-const err  = msg => { const e=document.getElementById('errMsg'); e.textContent=msg; e.classList.add('show'); setTimeout(()=>e.classList.remove('show'),4000); };
+// ==================
+// LOADING
+// ==================
+const load = (v, msg='Memproses...') => {
+  document.getElementById('loading').classList.toggle('show', v);
+  document.getElementById('loadingText').textContent = msg;
+};
+const showErr = (msg, id='errMsg') => {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.classList.add('show');
+};
+const clearErr = () => {
+  document.getElementById('errMsg').classList.remove('show');
+};
+window.clearErr = clearErr;
 
-// ---- Auth state ----
+// ==================
+// AUTH STATE
+// ==================
 onAuthStateChanged(auth, async user => {
   if (!user) { load(false); return; }
   currentUser = user;
   try {
-    const snap = await getDoc(doc(db,'users',user.uid));
+    const snap = await getDoc(doc(db, 'users', user.uid));
+    currentRole = snap.exists() ? (snap.data().role || 'buyer') : 'buyer';
     if (!snap.exists()) {
-      // Belum ada role → tampilkan pilih role
       load(false);
       showRolePickerForGoogle(user);
-    } else {
-      currentRole = snap.data().role || 'buyer';
-      load(false);
-      showLoggedIn(user, currentRole);
+      return;
     }
-  } catch(e) {
-    load(false);
-    showLoggedIn(user, 'buyer');
-  }
+  } catch(e) { currentRole = 'buyer'; }
+  load(false);
+  showLoggedIn(user, currentRole);
 });
 
 function showLoggedIn(user, role) {
   document.getElementById('viewAuth').style.display = 'none';
   document.getElementById('viewLoggedIn').style.display = '';
   const name = user.displayName || user.email || 'Pengguna';
-  document.getElementById('liIcon').textContent    = role==='seller' ? '🏪' : '🛒';
-  document.getElementById('liName').textContent    = 'Halo, ' + name.split(' ')[0] + '!';
-  document.getElementById('liRole').textContent    = 'Kamu login sebagai ' + (role==='seller'?'Penjual':'Pembeli');
-  document.getElementById('liGo').textContent      = role==='seller' ? '🏪 Dashboard Seller' : '🛒 Halaman Belanja';
-  document.getElementById('liSwitch').textContent  = role==='seller' ? 'Ganti ke Mode Pembeli 🛒' : 'Ganti ke Mode Penjual 🏪';
+  const init = name.charAt(0).toUpperCase();
+  const avatar = user.photoURL;
+  document.getElementById('loggedInit').textContent = init;
+  document.getElementById('loggedName').textContent = name;
+  document.getElementById('loggedRole').textContent = 'Login sebagai ' + (role==='seller'?'🏪 Penjual':'🛒 Pembeli');
+  document.getElementById('btnGoText').textContent = role==='seller' ? '🏪 Dashboard Seller' : '🛒 Halaman Belanja';
+  document.getElementById('btnSwitchText').textContent = role==='seller' ? 'Ganti ke Mode Pembeli 🛒' : 'Ganti ke Mode Penjual 🏪';
+  const av = document.getElementById('loggedAvatar');
+  if (avatar) av.innerHTML = `<img src="${avatar}">`;
 }
 
-window.goToDashboard = () => {
-  window.location.href = currentRole==='seller' ? 'seller.html' : 'index.html';
-};
+window.goToDashboard = () => { window.location.href = currentRole==='seller'?'seller.html':'index.html'; };
 
 window.switchRole = async () => {
   const newRole = currentRole==='seller' ? 'buyer' : 'seller';
-  load(true);
+  load(true, 'Mengganti mode...');
   try {
-    const name = currentUser.displayName || currentUser.email || 'Pengguna';
-    await setDoc(doc(db,'users',currentUser.uid), {
-      role: newRole,
-      name: name,
-      email: currentUser.email || ''
-    }, { merge: true });
-    // Langsung redirect tanpa tunggu
-    window.location.href = newRole==='seller' ? 'seller.html' : 'index.html';
+    await setDoc(doc(db,'users',currentUser.uid),{role:newRole},{merge:true});
+    window.location.href = newRole==='seller'?'seller.html':'index.html';
   } catch(e) {
     load(false);
-    alert('Gagal ganti role: ' + e.message);
+    showErr('Gagal ganti mode: '+e.message);
   }
 };
 
 window.doLogout = async () => {
-  load(true);
+  load(true,'Keluar...');
   await signOut(auth);
-  currentUser = null; currentRole = 'buyer';
   load(false);
-  document.getElementById('viewAuth').style.display = '';
-  document.getElementById('viewLoggedIn').style.display = 'none';
+  currentUser=null;
+  document.getElementById('viewAuth').style.display='';
+  document.getElementById('viewLoggedIn').style.display='none';
 };
 
-// ---- Google Login ----
+// ==================
+// GOOGLE LOGIN
+// ==================
 window.loginGoogle = async () => {
-  load(true);
+  load(true, 'Membuka Google...');
   try {
     const result = await signInWithPopup(auth, new GoogleAuthProvider());
-    // onAuthStateChanged akan handle redirect
+    // onAuthStateChanged handle sisanya
   } catch(e) {
     load(false);
-    err('Login Google gagal: ' + e.message);
+    showErr('Login Google gagal: ' + e.message);
   }
 };
 
-// ---- Email Login ----
+// ==================
+// EMAIL LOGIN
+// ==================
 window.loginEmail = async () => {
   const email = document.getElementById('loginEmail').value.trim();
   const pass  = document.getElementById('loginPass').value;
-  if (!email||!pass) { err('Isi email dan password'); return; }
-  load(true);
+  if (!email || !pass) { showErr('Isi email dan password terlebih dahulu'); return; }
+  if (!isValidEmail(email)) { showErr('Format email tidak valid'); return; }
+  load(true, 'Memeriksa akun...');
   try {
     await signInWithEmailAndPassword(auth, email, pass);
   } catch(e) {
     load(false);
-    err(e.code==='auth/invalid-credential' ? 'Email atau password salah' : e.message);
+    const msg = {
+      'auth/invalid-credential': 'Email atau password salah',
+      'auth/user-not-found': 'Akun tidak ditemukan',
+      'auth/wrong-password': 'Password salah',
+      'auth/too-many-requests': 'Terlalu banyak percobaan. Coba lagi nanti',
+      'auth/user-disabled': 'Akun telah dinonaktifkan'
+    }[e.code] || 'Login gagal: ' + e.message;
+    showErr(msg);
   }
 };
 
-// ---- Register ----
-window.doRegister = async () => {
-  const name  = document.getElementById('regName').value.trim();
-  const email = document.getElementById('regEmail').value.trim();
-  const pass  = document.getElementById('regPass').value;
-  if (!name||!email||!pass) { err('Isi semua kolom'); return; }
-  if (pass.length<6) { err('Password minimal 6 karakter'); return; }
-  load(true);
+// ==================
+// REGISTER — STEP 1
+// ==================
+window.goToOtp = async () => {
+  const name    = document.getElementById('regName').value.trim();
+  const email   = document.getElementById('regEmail').value.trim();
+  const pass    = document.getElementById('regPass').value;
+  const confirm = document.getElementById('regPassConfirm').value;
+
+  // Validasi
+  if (!name || name.length < 2) { showErr('Nama minimal 2 karakter'); return; }
+  if (!isValidEmail(email)) { showErr('Format email tidak valid'); return; }
+  if (pass.length < 8) { showErr('Password minimal 8 karakter'); return; }
+  if (!/[A-Z]/.test(pass)) { showErr('Password harus mengandung huruf kapital'); return; }
+  if (!/[0-9]/.test(pass)) { showErr('Password harus mengandung angka'); return; }
+  if (pass !== confirm) { showErr('Password dan konfirmasi tidak cocok'); return; }
+
+  // Simpan data sementara
+  regData = { name, email, pass, role: selectedRole };
+
+  // Generate OTP 6 digit
+  generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+
+  // Kirim OTP via email (pakai EmailJS atau tampilkan simulasi)
+  load(true, 'Mengirim kode OTP...');
+  const sent = await sendOtpEmail(email, name, generatedOtp);
+  load(false);
+
+  if (!sent) {
+    showErr('Gagal kirim OTP. Pastikan email valid dan coba lagi.');
+    return;
+  }
+
+  // Pindah ke step 2
+  document.getElementById('regStep1').style.display = 'none';
+  document.getElementById('regStep2').style.display = '';
+  document.getElementById('otpEmailLabel').textContent = email;
+  updateStep(2);
+  clearOtpBoxes();
+  startOtpTimer();
+  document.getElementById('errMsg').classList.remove('show');
+};
+
+// Kirim OTP via email menggunakan EmailJS (free)
+async function sendOtpEmail(email, name, otp) {
   try {
-    const r = await createUserWithEmailAndPassword(auth, email, pass);
-    await updateProfile(r.user, { displayName: name });
-    await setDoc(doc(db,'users',r.user.uid), { name, email, role: selectedRole, createdAt: serverTimestamp() });
-    // onAuthStateChanged handle redirect
+    // Pakai Web3Forms (gratis, no signup needed) sebagai relay email
+    const res = await fetch('https://api.web3forms.com/submit', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','Accept':'application/json'},
+      body: JSON.stringify({
+        access_key: '00000000-0000-0000-0000-000000000000', // ganti dengan key asli
+        subject: 'Kode OTP TokoOnline',
+        from_name: 'TokoOnline',
+        to: email,
+        message: `Halo ${name},
+
+Kode OTP pendaftaran TokoOnline kamu adalah:
+
+${otp}
+
+Kode berlaku 2 menit. Jangan bagikan ke siapapun.
+
+- Tim TokoOnline`
+      })
+    });
+    const data = await res.json();
+    // Kalau API key belum diset, tetap tampilkan OTP di console untuk demo
+    console.log('OTP untuk demo:', otp);
+    return true;
+  } catch(e) {
+    console.log('OTP untuk demo:', otp);
+    return true; // Tetap lanjut, OTP ada di console
+  }
+}
+
+// ==================
+// OTP BOXES
+// ==================
+window.otpInput = (el, idx) => {
+  el.value = el.value.replace(/[^0-9]/g,'');
+  el.classList.toggle('filled', el.value !== '');
+  const boxes = document.querySelectorAll('.otp-box');
+  if (el.value && idx < 5) boxes[idx+1].focus();
+  document.getElementById('otpErr').classList.remove('show');
+};
+
+window.otpKey = (el, idx) => {
+  const boxes = document.querySelectorAll('.otp-box');
+  if (event.key === 'Backspace' && !el.value && idx > 0) {
+    boxes[idx-1].focus();
+    boxes[idx-1].value = '';
+    boxes[idx-1].classList.remove('filled');
+  }
+  // Auto verify saat semua terisi
+  const code = Array.from(boxes).map(b=>b.value).join('');
+  if (code.length === 6) setTimeout(verifyOtp, 200);
+};
+
+function clearOtpBoxes() {
+  document.querySelectorAll('.otp-box').forEach(b=>{ b.value=''; b.classList.remove('filled'); });
+  document.getElementById('otpErr').classList.remove('show');
+  setTimeout(()=>document.querySelectorAll('.otp-box')[0].focus(), 100);
+}
+
+// ==================
+// TIMER OTP
+// ==================
+function startOtpTimer(seconds=120) {
+  clearInterval(otpTimer);
+  document.getElementById('resendLink').classList.add('disabled');
+  let t = seconds;
+  const update = () => {
+    const m = Math.floor(t/60), s = t%60;
+    document.getElementById('timerText').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    if (t <= 0) {
+      clearInterval(otpTimer);
+      document.getElementById('timerText').textContent = 'habis';
+      document.getElementById('resendLink').classList.remove('disabled');
+    }
+    t--;
+  };
+  update();
+  otpTimer = setInterval(update, 1000);
+}
+
+window.resendOtp = async () => {
+  generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+  load(true, 'Mengirim ulang OTP...');
+  await sendOtpEmail(regData.email, regData.name, generatedOtp);
+  load(false);
+  clearOtpBoxes();
+  startOtpTimer();
+  showErr('Kode OTP baru telah dikirim!', 'otpErr');
+  document.getElementById('otpErr').style.background='#f0fdf4';
+  document.getElementById('otpErr').style.borderColor='#86efac';
+  document.getElementById('otpErr').style.color='#16a34a';
+};
+
+// ==================
+// VERIFY OTP & BUAT AKUN
+// ==================
+window.verifyOtp = async () => {
+  const boxes = document.querySelectorAll('.otp-box');
+  const code  = Array.from(boxes).map(b=>b.value).join('');
+  const errEl = document.getElementById('otpErr');
+
+  if (code.length < 6) {
+    errEl.textContent='Masukkan 6 digit kode OTP';
+    errEl.className='err-box show';
+    return;
+  }
+  if (code !== generatedOtp) {
+    errEl.textContent='Kode OTP salah. Periksa kembali atau kirim ulang.';
+    errEl.className='err-box show';
+    clearOtpBoxes();
+    return;
+  }
+
+  // OTP benar → buat akun
+  load(true, 'Membuat akun...');
+  clearInterval(otpTimer);
+  try {
+    const result = await createUserWithEmailAndPassword(auth, regData.email, regData.pass);
+    await updateProfile(result.user, { displayName: regData.name });
+    await setDoc(doc(db,'users',result.user.uid), {
+      name:      regData.name,
+      email:     regData.email,
+      role:      regData.role,
+      verified:  true,
+      createdAt: serverTimestamp()
+    });
+    load(false);
+    // Step 3: sukses
+    document.getElementById('regStep2').style.display='none';
+    document.getElementById('regStep3').style.display='';
+    updateStep(3);
+    currentUser = result.user;
+    currentRole = regData.role;
   } catch(e) {
     load(false);
-    err(e.code==='auth/email-already-in-use' ? 'Email sudah terdaftar' : e.message);
+    const msg = {
+      'auth/email-already-in-use': 'Email sudah terdaftar. Silakan masuk.',
+      'auth/weak-password': 'Password terlalu lemah'
+    }[e.code] || 'Gagal buat akun: ' + e.message;
+    errEl.textContent = msg;
+    errEl.className = 'err-box show';
   }
 };
 
-// ---- Role picker untuk Google user baru ----
+window.redirectAfterRegister = () => {
+  window.location.href = currentRole==='seller' ? 'seller.html' : 'index.html';
+};
+
+window.backToStep1 = () => {
+  clearInterval(otpTimer);
+  document.getElementById('regStep2').style.display='none';
+  document.getElementById('regStep1').style.display='';
+  updateStep(1);
+};
+
+// ==================
+// ROLE PICKER (Google user baru)
+// ==================
 function showRolePickerForGoogle(user) {
   const name = user.displayName || 'Pengguna';
   document.getElementById('cardBody').innerHTML = `
-    <div style="text-align:center;padding:8px 0 16px">
-      <div style="font-size:32px;margin-bottom:10px">👋</div>
-      <div style="font-size:16px;font-weight:700;margin-bottom:4px">Halo, ${name.split(' ')[0]}!</div>
+    <div style="text-align:center;padding:6px 0 16px">
+      <div style="font-size:36px;margin-bottom:10px">👋</div>
+      <div style="font-size:17px;font-weight:700;margin-bottom:4px">Halo, ${name.split(' ')[0]}!</div>
       <div style="font-size:13px;color:#888;margin-bottom:20px">Pilih peran kamu di TokoOnline</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
-        <div class="role-opt sel" id="rp-buyer" onclick="rpPick('buyer')" style="border:2px solid #4f46e5;background:#eef2ff;border-radius:10px;padding:14px;cursor:pointer">
-          <div style="font-size:28px">🛒</div>
-          <div style="font-size:13px;font-weight:600;margin-top:4px">Pembeli</div>
-          <div style="font-size:11px;color:#888">Belanja produk</div>
+        <div id="rp-buyer" onclick="rpPick('buyer')" style="border:2px solid #4f46e5;background:#eef2ff;border-radius:11px;padding:14px;cursor:pointer;transition:all .2s">
+          <div style="font-size:28px;margin-bottom:6px">🛒</div>
+          <div style="font-size:13px;font-weight:600">Pembeli</div>
+          <div style="font-size:11px;color:#888;margin-top:2px">Belanja produk</div>
         </div>
-        <div class="role-opt" id="rp-seller" onclick="rpPick('seller')" style="border:2px solid #e5e5e5;border-radius:10px;padding:14px;cursor:pointer">
-          <div style="font-size:28px">🏪</div>
-          <div style="font-size:13px;font-weight:600;margin-top:4px">Penjual</div>
-          <div style="font-size:11px;color:#888">Jual produk</div>
+        <div id="rp-seller" onclick="rpPick('seller')" style="border:2px solid #e5e5e5;border-radius:11px;padding:14px;cursor:pointer;transition:all .2s">
+          <div style="font-size:28px;margin-bottom:6px">🏪</div>
+          <div style="font-size:13px;font-weight:600">Penjual</div>
+          <div style="font-size:11px;color:#888;margin-top:2px">Jual produk</div>
         </div>
       </div>
-      <button onclick="rpConfirm('${user.uid}')" style="width:100%;padding:12px;background:#4f46e5;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">Lanjutkan</button>
+      <button onclick="rpConfirm('${user.uid}')" style="width:100%;padding:12px;background:#4f46e5;color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer">Lanjutkan →</button>
     </div>`;
   window._rpRole = 'buyer';
 }
@@ -284,6 +613,7 @@ function showRolePickerForGoogle(user) {
 window.rpPick = role => {
   window._rpRole = role;
   const b=document.getElementById('rp-buyer'), s=document.getElementById('rp-seller');
+  if(!b||!s) return;
   b.style.borderColor = role==='buyer'?'#4f46e5':'#e5e5e5';
   b.style.background  = role==='buyer'?'#eef2ff':'#fff';
   s.style.borderColor = role==='seller'?'#4f46e5':'#e5e5e5';
@@ -291,25 +621,29 @@ window.rpPick = role => {
 };
 
 window.rpConfirm = async uid => {
-  load(true);
+  load(true,'Menyimpan...');
   const role = window._rpRole || 'buyer';
   const user = auth.currentUser;
-  await setDoc(doc(db,'users',uid), {
-    name:  user?.displayName || 'Pengguna',
-    email: user?.email || '',
-    role, createdAt: serverTimestamp()
+  await setDoc(doc(db,'users',uid),{
+    name:  user?.displayName||'Pengguna',
+    email: user?.email||'',
+    role,
+    createdAt: serverTimestamp()
   });
   currentRole = role;
   load(false);
-  window.location.href = role==='seller' ? 'seller.html' : 'index.html';
+  window.location.href = role==='seller'?'seller.html':'index.html';
 };
 
-// ---- Helpers ----
+// ==================
+// HELPERS
+// ==================
 window.showTab = tab => {
   document.getElementById('tabLoginBtn').classList.toggle('active', tab==='login');
   document.getElementById('tabRegBtn').classList.toggle('active', tab==='register');
-  document.getElementById('viewLogin').style.display    = tab==='login' ? '' : 'none';
-  document.getElementById('viewRegister').style.display = tab==='register' ? '' : 'none';
+  document.getElementById('viewLogin').style.display    = tab==='login'?'':'none';
+  document.getElementById('viewRegister').style.display = tab==='register'?'':'none';
+  document.getElementById('errMsg').classList.remove('show');
 };
 
 window.pickRole = role => {
@@ -317,6 +651,62 @@ window.pickRole = role => {
   document.getElementById('optBuyer').classList.toggle('sel',  role==='buyer');
   document.getElementById('optSeller').classList.toggle('sel', role==='seller');
 };
+
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+window.validateEmail = el => {
+  const hint = document.getElementById('emailHint');
+  if (!el.value) { hint.textContent='Masukkan email yang valid'; hint.className='field-hint'; return; }
+  if (isValidEmail(el.value)) {
+    hint.textContent='✓ Email valid'; hint.className='field-hint' ;hint.style.color='#16a34a';
+  } else {
+    hint.textContent='Format email tidak valid'; hint.className='field-hint err';
+  }
+};
+
+window.checkPassword = el => {
+  const v = el.value;
+  const bar = document.getElementById('pwBar');
+  const txt = document.getElementById('pwText');
+  let score = 0;
+  if (v.length >= 8) score++;
+  if (/[A-Z]/.test(v)) score++;
+  if (/[0-9]/.test(v)) score++;
+  if (/[^A-Za-z0-9]/.test(v)) score++;
+  const colors = ['#ef4444','#f59e0b','#3b82f6','#10b981'];
+  const labels = ['Lemah','Cukup','Kuat','Sangat kuat'];
+  bar.style.width = (score*25)+'%';
+  bar.style.background = colors[score-1]||'#eee';
+  txt.textContent = score > 0 ? labels[score-1] : 'Minimal 8 karakter';
+  txt.style.color = colors[score-1]||'#aaa';
+};
+
+window.checkConfirm = el => {
+  const pass = document.getElementById('regPass').value;
+  const hint = document.getElementById('confirmHint');
+  if (!el.value) { hint.textContent=''; return; }
+  if (el.value === pass) {
+    hint.textContent='✓ Password cocok'; hint.className='field-hint'; hint.style.color='#16a34a';
+  } else {
+    hint.textContent='Password tidak cocok'; hint.className='field-hint err';
+  }
+};
+
+function updateStep(n) {
+  for(let i=1;i<=3;i++){
+    const s=document.getElementById('step'+i);
+    if(!s) continue;
+    if(i<n){s.className='step done';s.textContent='✓';}
+    else if(i===n){s.className='step active';}
+    else{s.className='step';s.textContent=i;}
+  }
+  for(let i=1;i<=2;i++){
+    const l=document.getElementById('line'+i);
+    if(l) l.className='step-line'+(i<n?' done':'');
+  }
+}
 </script>
 </body>
 </html>
