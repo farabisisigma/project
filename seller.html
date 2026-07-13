@@ -88,6 +88,11 @@ body{font-family:system-ui,sans-serif;background:#f5f5f5;color:#1a1a1a}
   .review-prod{font-size:11px;color:#888;background:#f5f5f5;padding:2px 8px;border-radius:20px}
   .review-text{font-size:13px;color:#555;line-height:1.5}
   .review-date{font-size:11px;color:#bbb;margin-top:4px}
+  .star-big{font-size:32px;font-weight:700}
+  .star-sub{font-size:11px;color:#888;margin-top:2px}
+  .rbar-row{display:flex;align-items:center;gap:8px;font-size:12px;color:#888;margin-bottom:4px}
+  .rbar-track{flex:1;height:6px;background:#f0f0f0;border-radius:6px;overflow:hidden}
+  .rbar-fill{height:100%;background:#f59e0b}
 .section-title{font-size:16px;font-weight:600}
 .notif{position:fixed;bottom:24px;right:24px;background:#fff;border:1px solid #86efac;border-radius:8px;padding:10px 16px;font-size:13px;color:#16a34a;z-index:500;display:none;box-shadow:0 4px 16px rgba(0,0,0,.1)}
 .notif.show{display:block}
@@ -339,7 +344,7 @@ body{font-family:system-ui,sans-serif;background:#f5f5f5;color:#1a1a1a}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, getDocs, addDoc, deleteDoc, updateDoc, doc, serverTimestamp }
+import { getFirestore, collection, getDocs, addDoc, deleteDoc, updateDoc, doc, query, where, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, signOut, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -357,18 +362,13 @@ const app  = initializeApp(firebaseConfig);
 const db   = getFirestore(app);
 const auth = getAuth(app);
 
-const fmt   = n => 'Rp ' + Math.round(n).toLocaleString('id-ID');
+const fmt    = n => 'Rp ' + Math.round(n).toLocaleString('id-ID');
 const EMOJIS = {Elektronik:'📱',Fashion:'👕',Makanan:'🍕',Olahraga:'⚽',Rumah:'🏠'};
 
-let currentUser = null;
-let myProducts  = [];
+let currentUser  = null;
+let myProducts   = [];
+let myReviews    = [];
 
-// ---- Auth ----
-onAuthStateChanged(auth, async user => {
-  if (!user) { window.location.href='auth.html'; return; }
-  currentUser = user;
-  const name = user.displayName || user.email || 'Seller';
-  document.getElementById('userAvatar').textContent = name.charAt(0).toUpperCase();
-  document.getElementById('userName').textContent   = name.split(' ')[0];
-  document.getElementById('dropName').textContent   = name;
-  document.getElementById('dropEmail').textContent  =
+/* =========================================================
+   NAVIGASI ANTAR HALAMAN
+   ==============
