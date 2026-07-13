@@ -371,4 +371,440 @@ let myReviews    = [];
 
 /* =========================================================
    NAVIGASI ANTAR HALAMAN
-   ==============
+   ========================================================= */
+const PAGES = ['dashboard','produk','tambah','ulasan'];
+
+function showPage(pageName, sourceEl){
+  PAGES.forEach(p=>{
+    const el = document.getElementById('page' + p.charAt(0).toUpperCase() + p.slice(1));
+    if (el) el.style.display = (p === pageName) ? '' : 'none';
+  });
+
+  // update sidenav (desktop)
+  document.querySelectorAll('.sidenav-item').forEach(item => item.classList.remove('active'));
+  if (sourceEl && sourceEl.classList && sourceEl.classList.contains('sidenav-item')) {
+    sourceEl.classList.add('active');
+  } else {
+    const idx = PAGES.indexOf(pageName);
+    const items = document.querySelectorAll('.sidenav-item');
+    if (items[idx]) items[idx].classList.add('active');
+  }
+
+  // update bottom nav (mobile)
+  document.querySelectorAll('.sbnav-item').forEach(item => item.classList.remove('active'));
+  const bnav = document.getElementById('sbnav-' + pageName);
+  if (bnav) bnav.classList.add('active');
+
+  if (pageName === 'tambah' && !document.getElementById('sellerForm').dataset.editId) {
+    document.getElementById('formTitle').textContent = '➕ Tambah Produk Baru';
+    document.getElementById('submitBtn').textContent = '✅ Publikasikan';
+    document.getElementById('cancelBtn').style.display = 'none';
+  }
+  if (pageName === 'ulasan') renderReviews();
+  if (pageName === 'produk') filterMyProducts();
+}
+
+function sellerNav(pageName, btn){
+  showPage(pageName, null);
+  document.querySelectorAll('.sbnav-item').forEach(item => item.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+}
+
+/* =========================================================
+   DROPDOWN USER
+   ========================================================= */
+function toggleDropdown(e){
+  if (e) e.stopPropagation();
+  document.getElementById('dropdown').classList.toggle('show');
+}
+document.addEventListener('click', () => {
+  document.getElementById('dropdown').classList.remove('show');
+});
+
+function logout(){
+  signOut(auth).then(()=>{ window.location.href = 'auth.html'; });
+}
+
+/* =========================================================
+   AUTH
+   ========================================================= */
+onAuthStateChanged(auth, async user => {
+  if (!user) { window.location.href='auth.html'; return; }
+  currentUser = user;
+  const name = user.displayName || user.email || 'Seller';
+  document.getElementById('userAvatar').textContent = name.charAt(0).toUpperCase();
+  document.getElementById('userName').textContent   = name.split(' ')[0];
+  document.getElementById('dropName').textContent   = name;
+  document.getElementById('dropEmail').textContent  = user.email || '';
+
+  await loadProducts();
+  await loadReviews();
+});
+
+/* =========================================================
+   NOTIFIKASI
+   ========================================================= */
+let notifTimer = null;
+function showNotif(msg, isError){
+  const n = document.getElementById('notif');
+  n.textContent = msg;
+  n.classList.toggle('err', !!isError);
+  n.classList.add('show');
+  clearTimeout(notifTimer);
+  notifTimer = setTimeout(()=> n.classList.remove('show'), 2500);
+}
+
+/* =========================================================
+   PRODUK: load, render, filter
+   ========================================================= */
+async function loadProducts(){
+  try{
+    const q = query(collection(db,'products'), where('sellerId','==', currentUser.uid));
+    const snap = await getDocs(q);
+    myProducts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch(err){
+    console.error(err);
+    myProducts = [];
+  }
+  renderStats();
+  renderRecentProducts();
+  filterMyProducts();
+  populateReviewProductFilter();
+}
+
+function renderStats(){
+  const totalProducts = myProducts.length;
+  const totalSold     = myProducts.reduce((s,p)=> s + (Number(p.sold)||0), 0);
+  const totalRevenue  = myProducts.reduce((s,p)=> s + (Number(p.sold)||0) * (Number(p.price)||0), 0);
+  const ratedProducts = myProducts.filter(p => Number(p.rating) > 0);
+  const avgRating     = ratedProducts.length
+    ? (ratedProducts.reduce((s,p)=> s + Number(p.rating), 0) / ratedProducts.length)
+    : 0;
+
+  document.getElementById('statProducts').textContent = totalProducts;
+  document.getElementById('statSold').textContent      = totalSold;
+  document.getElementById('statRating').textContent    = avgRating.toFixed(1);
+  document.getElementById('statRevenue').textContent   = fmt(totalRevenue);
+}
+
+function productThumb(p){
+  return p.image
+    ? `<div class="prod-thumb"><img src="${p.image}" alt=""></div>`
+    : `<div class="prod-thumb">${EMOJIS[p.category] || '📦'}</div>`;
+}
+
+function renderRecentProducts(){
+  const wrap = document.getElementById('recentProducts');
+  if (!myProducts.length){
+    wrap.innerHTML = '<div class="empty-state">Belum ada produk.</div>';
+    return;
+  }
+  const recent = [...myProducts]
+    .sort((a,b)=> (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0))
+    .slice(0,5);
+
+  wrap.innerHTML = `<div class="product-table">
+    <div id="recentTableBody">
+      ${recent.map(p => productRowHtml(p)).join('')}
+    </div>
+  </div>`;
+}
+
+function productRowHtml(p){
+  return `<div class="table-row">
+    ${productThumb(p)}
+    <div>
+      <div class="prod-name">${escapeHtml(p.name||'-')}</div>
+      <div class="prod-cat">${escapeHtml(p.category||'-')}</div>
+    </div>
+    <div>${escapeHtml(p.category||'-')}</div>
+    <div class="price-col">${fmt(p.price||0)}</div>
+    <div>${p.sold||0}</div>
+    <div class="action-btns">
+      <button class="btn-edit" onclick="editProduct('${p.id}')">✏️ Edit</button>
+      <button class="btn-del" onclick="deleteProduct('${p.id}')">🗑️</button>
+    </div>
+  </div>`;
+}
+
+function filterMyProducts(){
+  const search = (document.getElementById('sellerSearch')?.value || '').toLowerCase();
+  const cat    = document.getElementById('sellerCatFilter')?.value || '';
+  const sort   = document.getElementById('sellerSortFilter')?.value || '';
+
+  let list = myProducts.filter(p=>{
+    const matchSearch = !search || (p.name||'').toLowerCase().includes(search);
+    const matchCat    = !cat || p.category === cat;
+    return matchSearch && matchCat;
+  });
+
+  if (sort === 'name')       list.sort((a,b)=> (a.name||'').localeCompare(b.name||''));
+  if (sort === 'price_low')  list.sort((a,b)=> (a.price||0) - (b.price||0));
+  if (sort === 'price_high') list.sort((a,b)=> (b.price||0) - (a.price||0));
+  if (sort === 'sold')       list.sort((a,b)=> (b.sold||0) - (a.sold||0));
+  if (sort === 'rating')     list.sort((a,b)=> (b.rating||0) - (a.rating||0));
+
+  const countEl = document.getElementById('sellerProductCount');
+  if (countEl) countEl.textContent = `${list.length} produk ditemukan`;
+
+  const body = document.getElementById('productTableBody');
+  body.innerHTML = list.length
+    ? list.map(p => productRowHtml(p)).join('')
+    : '<div class="empty-state">Belum ada produk.</div>';
+}
+
+/* =========================================================
+   FORM TAMBAH / EDIT PRODUK
+   ========================================================= */
+let pendingImageDataUrl = null;
+
+function handleUpload(input){
+  const file = input.files && input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024){
+    showNotif('Ukuran foto maksimal 5MB', true);
+    input.value = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX_W = 800;
+      const scale = Math.min(1, MAX_W / img.width);
+      const canvas = document.createElement('canvas');
+      canvas.width  = img.width * scale;
+      canvas.height = img.height * scale;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      pendingImageDataUrl = canvas.toDataURL('image/jpeg', 0.75);
+
+      const preview = document.getElementById('previewImg');
+      preview.src = pendingImageDataUrl;
+      preview.style.display = 'block';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function submitProduct(){
+  const name  = document.getElementById('sellerName').value.trim();
+  const cat   = document.getElementById('sellerCat').value;
+  const price = Number(document.getElementById('sellerPrice').value);
+  const desc  = document.getElementById('sellerDesc').value.trim();
+  const editId = document.getElementById('sellerForm').dataset.editId;
+
+  if (!name){ showNotif('Nama produk wajib diisi', true); return; }
+  if (!price || price <= 0){ showNotif('Harga produk tidak valid', true); return; }
+
+  const submitBtn = document.getElementById('submitBtn');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Menyimpan...';
+
+  try{
+    if (editId){
+      const existing = myProducts.find(p => p.id === editId);
+      const updateData = {
+        name, category: cat, price, description: desc,
+      };
+      if (pendingImageDataUrl) updateData.image = pendingImageDataUrl;
+      await updateDoc(doc(db,'products', editId), updateData);
+      showNotif('Produk berhasil diperbarui');
+    } else {
+      await addDoc(collection(db,'products'), {
+        name, category: cat, price, description: desc,
+        image: pendingImageDataUrl || '',
+        sold: 0, rating: 0,
+        sellerId: currentUser.uid,
+        createdAt: serverTimestamp()
+      });
+      showNotif('Produk berhasil dipublikasikan');
+    }
+    resetForm();
+    await loadProducts();
+    showPage('produk', null);
+  } catch(err){
+    console.error(err);
+    showNotif('Gagal menyimpan produk', true);
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = '✅ Publikasikan';
+  }
+}
+
+function editProduct(id){
+  const p = myProducts.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('sellerForm').dataset.editId = id;
+  document.getElementById('sellerName').value  = p.name || '';
+  document.getElementById('sellerCat').value   = p.category || 'Elektronik';
+  document.getElementById('sellerPrice').value = p.price || '';
+  document.getElementById('sellerDesc').value  = p.description || '';
+
+  const preview = document.getElementById('previewImg');
+  if (p.image){
+    preview.src = p.image;
+    preview.style.display = 'block';
+  } else {
+    preview.style.display = 'none';
+  }
+  pendingImageDataUrl = null;
+
+  document.getElementById('formTitle').textContent = '✏️ Edit Produk';
+  document.getElementById('submitBtn').textContent = '💾 Simpan Perubahan';
+  document.getElementById('cancelBtn').style.display = '';
+
+  showPage('tambah', null);
+}
+
+async function deleteProduct(id){
+  if (!confirm('Yakin ingin menghapus produk ini?')) return;
+  try{
+    await deleteDoc(doc(db,'products', id));
+    showNotif('Produk dihapus');
+    await loadProducts();
+  } catch(err){
+    console.error(err);
+    showNotif('Gagal menghapus produk', true);
+  }
+}
+
+function cancelEdit(){
+  resetForm();
+  showPage('produk', null);
+}
+
+function resetForm(){
+  document.getElementById('sellerForm').dataset.editId = '';
+  document.getElementById('sellerName').value  = '';
+  document.getElementById('sellerCat').value   = 'Elektronik';
+  document.getElementById('sellerPrice').value = '';
+  document.getElementById('sellerDesc').value  = '';
+  document.getElementById('previewImg').style.display = 'none';
+  document.getElementById('fileInput').value = '';
+  pendingImageDataUrl = null;
+  document.getElementById('formTitle').textContent = '➕ Tambah Produk Baru';
+  document.getElementById('submitBtn').textContent = '✅ Publikasikan';
+  document.getElementById('cancelBtn').style.display = 'none';
+}
+
+/* =========================================================
+   ULASAN PEMBELI
+   ========================================================= */
+async function loadReviews(){
+  try{
+    const q = query(collection(db,'reviews'), where('sellerId','==', currentUser.uid));
+    const snap = await getDocs(q);
+    myReviews = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch(err){
+    console.error(err);
+    myReviews = [];
+  }
+  populateReviewProductFilter();
+  renderReviews();
+}
+
+function populateReviewProductFilter(){
+  const sel = document.getElementById('reviewFilterProd');
+  if (!sel) return;
+  const current = sel.value;
+  const names = [...new Set(myProducts.map(p => p.name).filter(Boolean))];
+  sel.innerHTML = '<option value="">Semua produk</option>' +
+    names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+  sel.value = current;
+}
+
+function starString(rating){
+  const r = Math.round(Number(rating)||0);
+  return '⭐'.repeat(r) + '☆'.repeat(5 - r);
+}
+
+function renderReviews(){
+  const filterProd = document.getElementById('reviewFilterProd')?.value || '';
+  const filterStar  = document.getElementById('reviewFilterStar')?.value || '';
+
+  let list = myReviews.filter(r=>{
+    const matchProd = !filterProd || r.productName === filterProd;
+    const matchStar = !filterStar || Number(r.rating) === Number(filterStar);
+    return matchProd && matchStar;
+  });
+
+  document.getElementById('reviewCount').textContent = `${list.length} ulasan`;
+
+  // ringkasan rating keseluruhan (dari semua ulasan, tidak difilter)
+  const total = myReviews.length;
+  const avg   = total ? myReviews.reduce((s,r)=> s + Number(r.rating||0), 0) / total : 0;
+  document.getElementById('avgRatingStar').textContent = avg.toFixed(1);
+  document.getElementById('avgStars').textContent = starString(avg);
+  document.getElementById('totalReviewCount').textContent = `${total} ulasan`;
+
+  const bars = document.getElementById('ratingBars');
+  bars.innerHTML = [5,4,3,2,1].map(star=>{
+    const count = myReviews.filter(r => Math.round(Number(r.rating)||0) === star).length;
+    const pct = total ? Math.round((count/total)*100) : 0;
+    return `<div class="rbar-row">
+      <span>${star}⭐</span>
+      <div class="rbar-track"><div class="rbar-fill" style="width:${pct}%"></div></div>
+      <span>${count}</span>
+    </div>`;
+  }).join('');
+
+  const listEl = document.getElementById('reviewListSeller');
+  if (!list.length){
+    listEl.innerHTML = '<div class="empty-state">Belum ada ulasan.</div>';
+    return;
+  }
+  listEl.innerHTML = list.map(r => `
+    <div class="review-row">
+      <div class="review-avatar">${(r.authorName||'?').charAt(0).toUpperCase()}</div>
+      <div class="review-content">
+        <div class="review-meta">
+          <span class="review-author-name">${escapeHtml(r.authorName||'Pembeli')}</span>
+          <span class="review-stars">${starString(r.rating)}</span>
+          ${r.productName ? `<span class="review-prod">${escapeHtml(r.productName)}</span>` : ''}
+        </div>
+        <div class="review-text">${escapeHtml(r.text||'')}</div>
+        <div class="review-date">${formatDate(r.createdAt)}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterReviews(){ renderReviews(); }
+
+/* =========================================================
+   HELPER
+   ========================================================= */
+function escapeHtml(str){
+  return String(str)
+    .replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
+    .replaceAll('"','&quot;').replaceAll("'",'&#039;');
+}
+function formatDate(ts){
+  if (!ts || !ts.seconds) return '';
+  const d = new Date(ts.seconds * 1000);
+  return d.toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric' });
+}
+
+/* =========================================================
+   EXPOSE KE GLOBAL SCOPE
+   (WAJIB — karena semua onclick="..." di HTML memanggil
+   fungsi dari scope global, sedangkan <script type="module">
+   membuat semua fungsi ini lokal ke module. Tanpa baris di
+   bawah ini, semua tombol tidak akan merespons.)
+   ========================================================= */
+window.showPage        = showPage;
+window.sellerNav       = sellerNav;
+window.toggleDropdown  = toggleDropdown;
+window.logout          = logout;
+window.handleUpload    = handleUpload;
+window.submitProduct   = submitProduct;
+window.editProduct     = editProduct;
+window.deleteProduct   = deleteProduct;
+window.cancelEdit      = cancelEdit;
+window.filterMyProducts= filterMyProducts;
+window.filterReviews   = filterReviews;
+</script>
+</body>
+</html>
