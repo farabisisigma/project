@@ -74,6 +74,20 @@ body{font-family:system-ui,sans-serif;background:#f5f5f5;color:#1a1a1a}
 .status-active{background:#dcfce7;color:#16a34a}
 .empty-state{text-align:center;padding:40px;color:#aaa;font-size:14px}
 .section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  /* ULASAN */
+  .review-panel{background:#fff;border:1px solid #e5e5e5;border-radius:12px;overflow:hidden;margin-top:14px}
+  .review-panel-head{padding:14px 16px;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center}
+  .review-panel-head h3{font-size:14px;font-weight:600}
+  .review-row{display:flex;gap:12px;padding:12px 16px;border-bottom:1px solid #f8f8f8;align-items:flex-start}
+  .review-row:last-child{border-bottom:none}
+  .review-avatar{width:36px;height:36px;border-radius:50%;background:#818cf8;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0}
+  .review-content{flex:1}
+  .review-meta{display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap}
+  .review-author-name{font-size:13px;font-weight:600}
+  .review-stars{color:#f59e0b;font-size:12px}
+  .review-prod{font-size:11px;color:#888;background:#f5f5f5;padding:2px 8px;border-radius:20px}
+  .review-text{font-size:13px;color:#555;line-height:1.5}
+  .review-date{font-size:11px;color:#bbb;margin-top:4px}
 .section-title{font-size:16px;font-weight:600}
 .notif{position:fixed;bottom:24px;right:24px;background:#fff;border:1px solid #86efac;border-radius:8px;padding:10px 16px;font-size:13px;color:#16a34a;z-index:500;display:none;box-shadow:0 4px 16px rgba(0,0,0,.1)}
 .notif.show{display:block}
@@ -126,6 +140,9 @@ body{font-family:system-ui,sans-serif;background:#f5f5f5;color:#1a1a1a}
     <div class="sidenav-item" onclick="showPage('tambah',this)">
       <span class="sidenav-icon">➕</span> Tambah Produk
     </div>
+    <div class="sidenav-item" onclick="showPage('ulasan',this)">
+      <span class="sidenav-icon">⭐</span> Ulasan Pembeli
+    </div>
   </div>
 
   <div class="content">
@@ -175,6 +192,26 @@ body{font-family:system-ui,sans-serif;background:#f5f5f5;color:#1a1a1a}
         <div class="section-title">📦 Produk Saya</div>
         <button class="btn-primary" onclick="showPage('tambah',null)" style="font-size:13px;padding:7px 14px">+ Tambah Produk</button>
       </div>
+      <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+        <input type="text" id="sellerSearch" placeholder="🔍 Cari produk saya..." oninput="filterMyProducts()"
+          style="flex:1;min-width:160px;padding:9px 14px;border:1.5px solid #e5e5e5;border-radius:8px;font-size:14px;background:#fafafa">
+        <select id="sellerCatFilter" onchange="filterMyProducts()"
+          style="padding:9px 12px;border:1.5px solid #e5e5e5;border-radius:8px;font-size:14px;background:#fafafa">
+          <option value="">Semua kategori</option>
+          <option>Elektronik</option><option>Fashion</option>
+          <option>Makanan</option><option>Olahraga</option><option>Rumah</option>
+        </select>
+        <select id="sellerSortFilter" onchange="filterMyProducts()"
+          style="padding:9px 12px;border:1.5px solid #e5e5e5;border-radius:8px;font-size:14px;background:#fafafa">
+          <option value="">Urutkan</option>
+          <option value="name">Nama A-Z</option>
+          <option value="price_low">Harga Termurah</option>
+          <option value="price_high">Harga Termahal</option>
+          <option value="sold">Terlaris</option>
+          <option value="rating">Rating Terbaik</option>
+        </select>
+      </div>
+      <div style="font-size:12px;color:#888;margin-bottom:10px" id="sellerProductCount"></div>
       <div class="product-table">
         <div class="table-head">
           <div>Foto</div>
@@ -187,7 +224,6 @@ body{font-family:system-ui,sans-serif;background:#f5f5f5;color:#1a1a1a}
         <div id="productTableBody"><div class="empty-state">Belum ada produk.</div></div>
       </div>
     </div>
-
     <!-- PAGE: TAMBAH / EDIT -->
     <div id="pageTambah" style="display:none">
       <div class="section-title" id="formTitle" style="margin-bottom:20px">➕ Tambah Produk Baru</div>
@@ -230,6 +266,42 @@ body{font-family:system-ui,sans-serif;background:#f5f5f5;color:#1a1a1a}
     </div>
 
   </div>
+  <!-- PAGE: ULASAN -->
+    <div id="pageUlasan" style="display:none">
+      <div class="section-head">
+        <div class="section-title">⭐ Ulasan Pembeli</div>
+        <div style="font-size:12px;color:#888" id="reviewCount"></div>
+      </div>
+      <!-- Statistik rating -->
+      <div style="background:#fff;border:1px solid #e5e5e5;border-radius:12px;padding:16px;margin-bottom:14px;display:flex;gap:20px;align-items:center;flex-wrap:wrap">
+        <div style="text-align:center;min-width:80px">
+          <div class="star-big" id="avgRatingStar">0.0</div>
+          <div style="color:#f59e0b;font-size:18px" id="avgStars">☆☆☆☆☆</div>
+          <div class="star-sub" id="totalReviewCount">0 ulasan</div>
+        </div>
+        <div style="flex:1;min-width:160px" id="ratingBars"></div>
+      </div>
+      <!-- Filter ulasan -->
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+        <select id="reviewFilterProd" onchange="filterReviews()"
+          style="flex:1;padding:8px 12px;border:1.5px solid #e5e5e5;border-radius:8px;font-size:13px;background:#fafafa">
+          <option value="">Semua produk</option>
+        </select>
+        <select id="reviewFilterStar" onchange="filterReviews()"
+          style="padding:8px 12px;border:1.5px solid #e5e5e5;border-radius:8px;font-size:13px;background:#fafafa">
+          <option value="">Semua bintang</option>
+          <option value="5">⭐⭐⭐⭐⭐ 5 bintang</option>
+          <option value="4">⭐⭐⭐⭐ 4 bintang</option>
+          <option value="3">⭐⭐⭐ 3 bintang</option>
+          <option value="2">⭐⭐ 2 bintang</option>
+          <option value="1">⭐ 1 bintang</option>
+        </select>
+      </div>
+      <div class="review-panel">
+        <div id="reviewListSeller"><div class="empty-state">Belum ada ulasan.</div></div>
+      </div>
+    </div>
+
 </div>
 
 <div class="notif" id="notif"></div>
@@ -308,206 +380,4 @@ function updateStats() {
   const totalSold    = myProducts.reduce((s,p)=>s+(p.sold||0),0);
   const avgRating    = myProducts.length ? (myProducts.reduce((s,p)=>s+(p.rating||0),0)/myProducts.length).toFixed(1) : '0.0';
   const estRevenue   = myProducts.reduce((s,p)=>s+(p.price||0)*(p.sold||0),0);
-  document.getElementById('statProducts').textContent = myProducts.length;
-  document.getElementById('statSold').textContent     = totalSold.toLocaleString('id-ID');
-  document.getElementById('statRating').textContent   = avgRating;
-  document.getElementById('statRevenue').textContent  = fmt(estRevenue);
-}
-
-// ---- Render recent (dashboard) ----
-function renderRecentProducts() {
-  const el = document.getElementById('recentProducts');
-  if (!myProducts.length) {
-    el.innerHTML = '<div class="empty-state">Belum ada produk — klik Tambah Produk di sidebar.</div>';
-    return;
-  }
-  const recent = [...myProducts].slice(0,4);
-  el.innerHTML = `<div class="product-table">
-    <div class="table-head"><div>Foto</div><div>Nama</div><div>Kategori</div><div>Harga</div><div>Terjual</div><div>Aksi</div></div>
-    ${recent.map(p=>`
-    <div class="table-row">
-      <div class="prod-thumb">${p.img?`<img src="${p.img}" alt="${p.name}">`:(EMOJIS[p.cat]||'📦')}</div>
-      <div><div class="prod-name">${p.name}</div></div>
-      <div style="font-size:12px;color:#888">${p.cat}</div>
-      <div class="price-col">${fmt(p.price)}</div>
-      <div style="font-size:13px">${(p.sold||0).toLocaleString('id-ID')}</div>
-      <div class="action-btns">
-        <button class="btn-edit" onclick="editProduct('${p.id}')">✏️ Edit</button>
-        <button class="btn-del" onclick="deleteProduct('${p.id}')">🗑️</button>
-      </div>
-    </div>`).join('')}
-  </div>`;
-}
-
-// ---- Render tabel produk ----
-function renderProductTable() {
-  const el = document.getElementById('productTableBody');
-  if (!myProducts.length) { el.innerHTML='<div class="empty-state">Belum ada produk.</div>'; return; }
-  el.innerHTML = myProducts.map(p=>`
-    <div class="table-row">
-      <div class="prod-thumb">${p.img?`<img src="${p.img}" alt="${p.name}">`:(EMOJIS[p.cat]||'📦')}</div>
-      <div><div class="prod-name">${p.name}</div><div class="prod-cat">${p.cat}</div></div>
-      <div style="font-size:12px;color:#888">${p.cat}</div>
-      <div class="price-col">${fmt(p.price)}</div>
-      <div style="font-size:13px">${(p.sold||0).toLocaleString('id-ID')}</div>
-      <div class="action-btns">
-        <button class="btn-edit" onclick="editProduct('${p.id}')">✏️ Edit</button>
-        <button class="btn-del" onclick="deleteProduct('${p.id}')">🗑️</button>
-      </div>
-    </div>`).join('');
-}
-
-// ---- Page navigation ----
-window.showPage = function(page, el) {
-  ['Dashboard','Produk','Tambah'].forEach(p=>document.getElementById('page'+p).style.display='none');
-  document.getElementById('page'+page.charAt(0).toUpperCase()+page.slice(1)).style.display='';
-  document.querySelectorAll('.sidenav-item').forEach(i=>i.classList.remove('active'));
-  if(el) el.classList.add('active');
-  if(page==='produk') renderProductTable();
-  if(page==='tambah' && !document.getElementById('sellerForm').dataset.editId) {
-    document.getElementById('formTitle').textContent='➕ Tambah Produk Baru';
-    document.getElementById('submitBtn').textContent='✅ Publikasikan';
-    document.getElementById('cancelBtn').style.display='none';
-  }
-};
-
-// ---- Upload foto ----
-window.handleUpload = function(input) {
-  const file=input.files[0]; if(!file) return;
-  if(file.size>5*1024*1024){showNotif('Max 5MB',true);return;}
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const img=new Image();
-    img.onload=()=>{
-      const canvas=document.createElement('canvas');
-      const MAX=600; let w=img.width,h=img.height;
-      if(w>MAX||h>MAX){if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}}
-      canvas.width=w;canvas.height=h;
-      canvas.getContext('2d').drawImage(img,0,0,w,h);
-      const compressed=canvas.toDataURL('image/jpeg',0.7);
-      document.getElementById('previewImg').src=compressed;
-      document.getElementById('previewImg').style.display='block';
-      document.getElementById('uploadArea').style.display='none';
-      showNotif('Foto berhasil diupload');
-    };
-    img.src=e.target.result;
-  };
-  reader.readAsDataURL(file);
-};
-
-// ---- Submit produk ----
-window.submitProduct = async function() {
-  const name   = document.getElementById('sellerName').value.trim();
-  const price  = +document.getElementById('sellerPrice').value;
-  const cat    = document.getElementById('sellerCat').value;
-  const desc   = document.getElementById('sellerDesc').value.trim();
-  const imgEl  = document.getElementById('previewImg');
-  const img    = imgEl.src?.startsWith('data:') ? imgEl.src : '';
-  const editId = document.getElementById('sellerForm').dataset.editId;
-
-  if(!name||!price||!desc){showNotif('Isi semua kolom',true);return;}
-
-  const btn=document.getElementById('submitBtn');
-  btn.textContent='Menyimpan...'; btn.disabled=true;
-
-  try {
-    if(editId) {
-      // UPDATE
-      console.log('Update produk:', editId);
-      await updateDoc(doc(db,'products',editId),{name,cat,price,desc,img});
-      const idx=myProducts.findIndex(p=>p.id===editId);
-      if(idx!==-1) myProducts[idx]={...myProducts[idx],name,cat,price,desc,img};
-      showNotif('✅ Produk berhasil diupdate!');
-      cancelEdit();
-    } else {
-      // TAMBAH BARU
-      console.log('Tambah produk baru, uid:', currentUser.uid);
-      const docRef=await addDoc(collection(db,'products'),{
-        name,cat,price,desc,img,
-        rating:0,sold:0,reviews:[],
-        createdBy: currentUser.uid,
-        createdAt: serverTimestamp()
-      });
-      console.log('Produk tersimpan:', docRef.id);
-      myProducts.unshift({id:docRef.id,name,cat,price,desc,img,rating:0,sold:0,reviews:[],createdBy:currentUser.uid});
-      showNotif('✅ Produk berhasil dipublikasikan!');
-      resetForm();
-    }
-    updateStats();
-    renderRecentProducts();
-    renderProductTable();
-  } catch(e){
-    console.error('submitProduct error:', e);
-    if(e.code==='permission-denied'){
-      showNotif('❌ Akses ditolak — pastikan sudah login sebagai seller',true);
-    } else {
-      showNotif('❌ Gagal menyimpan: '+e.message,true);
-    }
-  } finally {
-    btn.textContent = editId ? '💾 Simpan Perubahan' : '✅ Publikasikan';
-    btn.disabled=false;
-  }
-};
-
-// ---- Edit produk ----
-window.editProduct = function(id) {
-  const p=myProducts.find(x=>x.id===id);
-  if(!p) return;
-  document.getElementById('sellerName').value  = p.name;
-  document.getElementById('sellerPrice').value = p.price;
-  document.getElementById('sellerCat').value   = p.cat;
-  document.getElementById('sellerDesc').value  = p.desc||'';
-  if(p.img){
-    document.getElementById('previewImg').src=p.img;
-    document.getElementById('previewImg').style.display='block';
-    document.getElementById('uploadArea').style.display='none';
-  }
-  document.getElementById('sellerForm').dataset.editId = id;
-  document.getElementById('formTitle').textContent     = '✏️ Edit Produk';
-  document.getElementById('submitBtn').textContent     = '💾 Simpan Perubahan';
-  document.getElementById('cancelBtn').style.display  = '';
-  showPage('tambah', null);
-};
-
-window.cancelEdit = function() {
-  resetForm();
-  document.getElementById('formTitle').textContent    = '➕ Tambah Produk Baru';
-  document.getElementById('submitBtn').textContent    = '✅ Publikasikan';
-  document.getElementById('cancelBtn').style.display = 'none';
-};
-
-function resetForm() {
-  document.getElementById('sellerForm').dataset.editId = '';
-  document.getElementById('sellerName').value  = '';
-  document.getElementById('sellerPrice').value = '';
-  document.getElementById('sellerDesc').value  = '';
-  document.getElementById('previewImg').style.display='none';
-  document.getElementById('uploadArea').style.display='';
-  document.getElementById('fileInput').value='';
-  document.getElementById('submitBtn').disabled=false;
-}
-
-// ---- Hapus produk ----
-window.deleteProduct = async function(id) {
-  if(!confirm('Yakin hapus produk ini?')) return;
-  try {
-    await deleteDoc(doc(db,'products',id));
-    myProducts=myProducts.filter(p=>p.id!==id);
-    updateStats();
-    renderRecentProducts();
-    renderProductTable();
-    showNotif('Produk berhasil dihapus');
-  } catch(e) { showNotif('Gagal hapus: '+e.message,true); }
-};
-
-// ---- Helpers ----
-window.showNotif = (msg,err=false) => {
-  const n=document.getElementById('notif');
-  n.textContent=msg; n.className='notif'+(err?' err':'');
-  n.classList.add('show'); setTimeout(()=>n.classList.remove('show'),3000);
-};
-window.toggleDropdown = e=>{e.stopPropagation();document.getElementById('dropdown').classList.toggle('show');};
-document.addEventListener('click',()=>document.getElementById('dropdown').classList.remove('show'));
-</script>
-</body>
-</html>
+  document.getElementById('statPr
