@@ -376,6 +376,39 @@ input[type=range]{width:100%;accent-color:#4f46e5;margin-bottom:6px}
 </div>
 <div class="overlay" id="overlayDrawer" onclick="closeDrawer()" style="z-index:170"></div>
 
+<!-- MODAL ULASAN -->
+<div class="modal hide" id="reviewModal">
+  <div class="modal-head"><h2>⭐ Beri Ulasan</h2><button class="close-btn" onclick="closeReviewModal()">✕</button></div>
+  <div class="modal-body">
+    <div id="reviewProdInfo" style="display:flex;gap:12px;align-items:center;margin-bottom:16px;padding:12px;background:#f8f8f8;border-radius:10px">
+      <div id="reviewProdImg" style="width:48px;height:48px;border-radius:8px;background:#eee;display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden;flex-shrink:0"></div>
+      <div>
+        <div id="reviewProdName" style="font-size:14px;font-weight:600"></div>
+        <div style="font-size:12px;color:#888">Bagaimana produk ini?</div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="font-size:13px;color:#888;margin-bottom:10px;font-weight:500">Tap bintang untuk memberi rating</div>
+      <div id="starPicker" style="display:flex;justify-content:center;gap:6px">
+        <span class="star-pick" data-val="1" onclick="pickStar(1)" style="font-size:36px;cursor:pointer;transition:transform .15s">☆</span>
+        <span class="star-pick" data-val="2" onclick="pickStar(2)" style="font-size:36px;cursor:pointer;transition:transform .15s">☆</span>
+        <span class="star-pick" data-val="3" onclick="pickStar(3)" style="font-size:36px;cursor:pointer;transition:transform .15s">☆</span>
+        <span class="star-pick" data-val="4" onclick="pickStar(4)" style="font-size:36px;cursor:pointer;transition:transform .15s">☆</span>
+        <span class="star-pick" data-val="5" onclick="pickStar(5)" style="font-size:36px;cursor:pointer;transition:transform .15s">☆</span>
+      </div>
+      <div id="starLabel" style="font-size:13px;color:#f59e0b;margin-top:8px;font-weight:500;height:20px"></div>
+    </div>
+    <div style="margin-bottom:14px">
+      <label style="font-size:12px;color:#888;display:block;margin-bottom:6px;font-weight:500">Komentar (opsional)</label>
+      <textarea id="reviewComment" placeholder="Ceritakan pengalamanmu dengan produk ini..."
+        style="width:100%;padding:10px 12px;border:1.5px solid #e5e5e5;border-radius:9px;font-size:14px;font-family:inherit;resize:vertical;min-height:80px;background:#fafafa"></textarea>
+    </div>
+    <button onclick="submitReview()" style="width:100%;padding:12px;background:#f59e0b;color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer">
+      ⭐ Kirim Ulasan
+    </button>
+  </div>
+</div>
+
 <div class="notif" id="notif"></div>
 
 <script type="module">
@@ -589,7 +622,7 @@ window.checkout = async () => {
     if(currentUser) await addDoc(collection(db,'orders'),{...order,uid:currentUser.uid,createdAt:serverTimestamp()});
   } catch(e){console.warn('Save order:',e.message);}
   cart=[]; updateCartUI(); closePanel('cart');
-  renderOrders();
+  renderOrdersWithReview();
   showNotif('✅ Pembayaran via '+payMethod+' berhasil! Total '+fmt(total));
 };
 
@@ -690,7 +723,7 @@ window.showPage = (page, el) => {
   const target=document.getElementById(pageMap[page]||'pageShop');
   if(target) target.classList.add('active');
   if(el) el.classList.add('active');
-  if(page==='orders') renderOrders();
+  if(page==='orders') renderOrdersWithReview();
   // Update search bar visibility
   document.getElementById('searchInput').style.opacity = page==='shop'?'1':'0.4';
 };
@@ -709,6 +742,112 @@ window.openDrawer  = ()=>{document.getElementById('filterDrawer').classList.add(
 window.closeDrawer = ()=>{document.getElementById('filterDrawer').classList.remove('open');document.getElementById('overlayDrawer').classList.remove('show');};
 
 // ---- NOTIF ----
+// ---- REVIEW / ULASAN ----
+let reviewProductId = null;
+let selectedStar = 0;
+const starLabels = ['','Sangat Buruk 😞','Buruk 😕','Cukup 😐','Bagus 😊','Sangat Bagus 🤩'];
+
+window.openReviewModal = function(productId, productName, productImg) {
+  reviewProductId = productId;
+  selectedStar = 0;
+  document.getElementById('reviewProdName').textContent = productName;
+  const imgEl = document.getElementById('reviewProdImg');
+  imgEl.innerHTML = productImg ? `<img src="${productImg}" style="width:100%;height:100%;object-fit:cover">` : '📦';
+  document.getElementById('reviewComment').value = '';
+  document.getElementById('starLabel').textContent = '';
+  document.querySelectorAll('.star-pick').forEach(s=>s.textContent='☆');
+  document.getElementById('reviewModal').classList.remove('hide');
+  document.getElementById('overlay').classList.add('show');
+};
+
+window.closeReviewModal = () => {
+  document.getElementById('reviewModal').classList.add('hide');
+  document.getElementById('overlay').classList.remove('show');
+};
+
+window.pickStar = (val) => {
+  selectedStar = val;
+  document.querySelectorAll('.star-pick').forEach((s,i) => {
+    s.textContent = i < val ? '★' : '☆';
+    s.style.color = i < val ? '#f59e0b' : '#ddd';
+    s.style.transform = i < val ? 'scale(1.1)' : 'scale(1)';
+  });
+  document.getElementById('starLabel').textContent = starLabels[val] || '';
+};
+
+window.submitReview = async () => {
+  if (!selectedStar) { showNotif('Pilih rating bintang dulu!', true); return; }
+  if (!currentUser)  { showNotif('Login dulu untuk memberi ulasan', true); return; }
+
+  const comment = document.getElementById('reviewComment').value.trim();
+  const name    = userProfile.nickname || userProfile.name || currentUser.displayName || 'Pengguna';
+  const review  = {
+    author:    name,
+    rating:    selectedStar,
+    text:      comment || starLabels[selectedStar],
+    date:      new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'}),
+    uid:       currentUser.uid,
+    productId: reviewProductId,
+    createdAt: new Date().toISOString()
+  };
+
+  try {
+    // Simpan ke Firestore reviews collection
+    const { addDoc, collection: col, doc, updateDoc, arrayUnion } =
+      await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    await addDoc(col(db,'reviews'), review);
+
+    // Update array reviews di produk
+    const prod = products.find(p=>String(p.id)===String(reviewProductId));
+    if (prod) {
+      prod.reviews = prod.reviews || [];
+      prod.reviews.push(review);
+      // Hitung rating baru
+      const avg = prod.reviews.reduce((s,r)=>s+(r.rating||0),0) / prod.reviews.length;
+      prod.rating = Math.round(avg*10)/10;
+    }
+
+    closeReviewModal();
+    showNotif('⭐ Ulasan berhasil dikirim! Terima kasih.');
+    renderGrid();
+  } catch(e) {
+    showNotif('Gagal kirim ulasan: ' + e.message, true);
+  }
+};
+
+// ---- UPDATE renderOrders: tambah tombol beri ulasan ----
+function renderOrdersWithReview() {
+  const el = document.getElementById('ordersList');
+  if (!orders.length) {
+    el.innerHTML=`<div class="empty-orders">
+      <div class="icon">📦</div>
+      <div style="font-weight:600;margin-bottom:6px">Belum ada pesanan</div>
+      <div style="font-size:13px">Yuk mulai belanja!</div>
+    </div>`;
+    return;
+  }
+  el.innerHTML = orders.map(o=>`
+    <div class="order-card">
+      <div class="order-head">
+        <div class="order-id">#${(o.id||'').slice(-8)||'---'}</div>
+        <span class="order-status status-selesai">${o.status||'Selesai'}</span>
+      </div>
+      <div class="order-items" style="margin-bottom:10px">${(o.items||[]).map(i=>`${i.name} x${i.qty}`).join(', ')}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div class="order-total">${fmt(o.total||0)}</div>
+        <div style="font-size:11px;color:#aaa">${o.payMethod||''}</div>
+      </div>
+      <div class="order-date" style="margin-bottom:10px">${o.date||''}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${(o.items||[]).map(i=>`
+          <button onclick="openReviewModal('${i.productId||i.name}','${i.name}','')"
+            style="padding:5px 12px;border-radius:20px;border:1px solid #f59e0b;background:#fffbeb;color:#d97706;font-size:12px;cursor:pointer;font-weight:500">
+            ⭐ Beri ulasan: ${i.name.length>15?i.name.slice(0,15)+'...':i.name}
+          </button>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
 window.showNotif = (msg,err=false)=>{
   const n=document.getElementById('notif');
   n.textContent=msg;n.className='notif'+(err?' err':'');
