@@ -93,14 +93,23 @@ body{font-family:system-ui,sans-serif;background:#f5f5f5;color:#1a1a1a}
 .notif.show{display:block}
 .notif.err{border-color:#fca5a5;color:#ef4444}
 .preview-img{display:none;width:100%;height:160px;object-fit:cover;border-radius:8px;margin-top:8px}
+/* BOTTOM NAV SELLER */
+.seller-bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:#1e1b4b;border-top:1px solid #312e81;z-index:100;padding-bottom:env(safe-area-inset-bottom)}
+.sbnav-inner{display:flex}
+.sbnav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 4px 10px;font-size:10px;color:rgba(255,255,255,.5);cursor:pointer;gap:3px;border:none;background:none;transition:color .15s}
+.sbnav-item.active,.sbnav-item:hover{color:#fcd34d}
+.sbnav-icon{font-size:22px;line-height:1}
+
 @media(max-width:640px){
   .logo-sub,.sidenav,.table-head,.stat-sub{display:none}
   .layout{flex-direction:column}
-  .content{padding:12px}
+  .content{padding:12px 12px 90px}
   .stats-grid{grid-template-columns:repeat(2,1fr)}
   .table-head{display:none}
   .table-row{grid-template-columns:44px 1fr auto;gap:8px}
   .price-col,.status-col{display:none}
+  .seller-bottom-nav{display:block}
+  .form-card{max-width:100%}
 }
 </style>
 </head>
@@ -304,6 +313,28 @@ body{font-family:system-ui,sans-serif;background:#f5f5f5;color:#1a1a1a}
 
 </div>
 
+<!-- BOTTOM NAV SELLER (mobile only) -->
+<nav class="seller-bottom-nav">
+  <div class="sbnav-inner">
+    <button class="sbnav-item active" id="sbnav-dashboard" onclick="sellerNav('dashboard',this)">
+      <span class="sbnav-icon">📊</span>
+      <span>Dashboard</span>
+    </button>
+    <button class="sbnav-item" id="sbnav-produk" onclick="sellerNav('produk',this)">
+      <span class="sbnav-icon">📦</span>
+      <span>Produk</span>
+    </button>
+    <button class="sbnav-item" id="sbnav-tambah" onclick="sellerNav('tambah',this)">
+      <span class="sbnav-icon">➕</span>
+      <span>Tambah</span>
+    </button>
+    <button class="sbnav-item" id="sbnav-ulasan" onclick="sellerNav('ulasan',this)">
+      <span class="sbnav-icon">⭐</span>
+      <span>Ulasan</span>
+    </button>
+  </div>
+</nav>
+
 <div class="notif" id="notif"></div>
 
 <script type="module">
@@ -340,44 +371,4 @@ onAuthStateChanged(auth, async user => {
   document.getElementById('userAvatar').textContent = name.charAt(0).toUpperCase();
   document.getElementById('userName').textContent   = name.split(' ')[0];
   document.getElementById('dropName').textContent   = name;
-  document.getElementById('dropEmail').textContent  = user.email || '';
-  await loadMyProducts();
-  updateStats();
-  renderRecentProducts();
-  renderProductTable();
-});
-
-window.logout = async () => { await signOut(auth); window.location.href='auth.html'; };
-
-// ---- Load produk milik seller ini ----
-async function loadMyProducts() {
-  try {
-    // Load semua produk lalu filter by uid (hindari butuh Firestore index)
-    const snap = await getDocs(collection(db,'products'));
-    myProducts = snap.docs
-      .map(d => ({
-        id:      d.id,
-        name:    d.data().name    || '',
-        cat:     d.data().cat     || '',
-        price:   d.data().price   || 0,
-        desc:    d.data().desc    || '',
-        img:     d.data().img     || '',
-        rating:  d.data().rating  || 0,
-        sold:    d.data().sold    || 0,
-        reviews: d.data().reviews || [],
-        createdBy: d.data().createdBy || '',
-      }))
-      .filter(p => p.createdBy === currentUser.uid);
-    console.log('Produk saya:', myProducts.length);
-  } catch(e) {
-    console.warn('loadMyProducts error:', e.message);
-    myProducts = [];
-  }
-}
-
-// ---- Stats ----
-function updateStats() {
-  const totalSold    = myProducts.reduce((s,p)=>s+(p.sold||0),0);
-  const avgRating    = myProducts.length ? (myProducts.reduce((s,p)=>s+(p.rating||0),0)/myProducts.length).toFixed(1) : '0.0';
-  const estRevenue   = myProducts.reduce((s,p)=>s+(p.price||0)*(p.sold||0),0);
-  document.getElementById('statPr
+  document.getElementById('dropEmail').textContent  =
