@@ -520,13 +520,19 @@ window.renderGrid = () => {
       <div class="product-info">
         <div class="product-name" title="${p.name}">${p.name}</div>
         <div class="product-price">${fmt(p.price)}</div>
+        ${p.stock===0 ? '<div style="font-size:11px;color:#ef4444;font-weight:600;margin-bottom:4px">❌ Stok Habis</div>' :
+          p.stock>0&&p.stock<=5 ? `<div style="font-size:11px;color:#d97706;font-weight:600;margin-bottom:4px">⚠️ Sisa ${p.stock} stok</div>` : ''}
         <div class="product-meta">
           <span class="stars">${stars(p.rating)} ${p.rating||0}</span>
           <span>${(p.sold||0).toLocaleString('id-ID')} terjual</span>
         </div>
-        <button class="add-btn" id="btn-${p.id}" onclick="event.stopPropagation();addToCartAnimated('${p.id}',this)">
-          <span class="btn-icon">🛒</span><span class="btn-label">Tambah</span>
-        </button>
+        ${(p.stock===0) ?
+          '<button class="add-btn" disabled style="background:#f0f0f0;color:#aaa;cursor:not-allowed;border:none"><span>❌</span><span>Stok Habis</span></button>' :
+          `<button class="add-btn" id="btn-${p.id}" onclick="event.stopPropagation();addToCartAnimated('${p.id}',this)">
+            <span class="btn-icon">🛒</span>
+            <span class="btn-label">Tambah${p.stock>0&&p.stock<=5?' (sisa '+p.stock+')':'' }</span>
+          </button>`
+        }
       </div>
     </div>`).join('');
 };
@@ -551,21 +557,46 @@ window.syncSort = ()=>{document.getElementById('sortFilter').value=document.getE
 // ---- CART ----
 window.addToCartAnimated = (id,btn) => {
   if(btn.classList.contains('loading')) return;
-  const p=products.find(x=>String(x.id)===String(id));
-  btn.classList.add('loading');btn.disabled=true;
-  btn.querySelector('.btn-icon').textContent='⏳';btn.querySelector('.btn-label').textContent='Menambahkan...';
+  const p = products.find(x=>String(x.id)===String(id));
+  if(!p) return;
+
+  // Cek stok sebelum proses
+  const inCart  = cart.find(x=>String(x.id)===String(id));
+  const cartQty = inCart ? inCart.qty : 0;
+  const hasStock = p.stock === undefined || p.stock === -1 || p.stock > 0;
+
+  if (!hasStock || p.stock === 0) {
+    showNotif('❌ Stok '+p.name+' habis!', true);
+    return;
+  }
+  if (p.stock > 0 && cartQty >= p.stock) {
+    showNotif('⚠️ Stok '+p.name+' hanya '+p.stock+' tersisa!', true);
+    return;
+  }
+
+  btn.classList.add('loading'); btn.disabled=true;
+  btn.querySelector('.btn-icon').textContent='⏳';
+  btn.querySelector('.btn-label').textContent='Menambahkan...';
+
   setTimeout(()=>{
-    const ex=cart.find(x=>String(x.id)===String(id));
+    const ex = cart.find(x=>String(x.id)===String(id));
     if(ex) ex.qty++; else cart.push({...p,qty:1});
     updateCartUI();
-    btn.classList.remove('loading');btn.classList.add('added');
-    btn.querySelector('.btn-icon').textContent='✅';btn.querySelector('.btn-label').textContent='Ditambahkan!';
+
+    btn.classList.remove('loading'); btn.classList.add('added');
+    btn.querySelector('.btn-icon').textContent='✅';
+    btn.querySelector('.btn-label').textContent='Ditambahkan!';
+
     setTimeout(()=>{
       btn.classList.remove('added');
-      const ex2=cart.find(x=>String(x.id)===String(id));
+      const ex2 = cart.find(x=>String(x.id)===String(id));
+      const newQty = ex2 ? ex2.qty : 0;
+      const sisa = p.stock > 0 ? p.stock - newQty : null;
       btn.querySelector('.btn-icon').textContent='🛒';
-      btn.querySelector('.btn-label').textContent=ex2?`Tambah lagi (${ex2.qty})`:'Tambah';
-      btn.disabled=false;
+      btn.querySelector('.btn-label').textContent =
+        sisa !== null && sisa <= 5 ? `Tambah (sisa ${sisa})` :
+        ex2 ? `Tambah lagi (${ex2.qty})` : 'Tambah';
+      btn.disabled = false;
     },1500);
     showNotif('🛒 '+p.name+' ditambahkan!');
   },500);
