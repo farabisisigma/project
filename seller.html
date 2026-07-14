@@ -74,6 +74,17 @@ body{font-family:system-ui,sans-serif;background:#f5f5f5;color:#1a1a1a}
 .status-active{background:#dcfce7;color:#16a34a}
 .empty-state{text-align:center;padding:40px;color:#aaa;font-size:14px}
 .section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  /* STOK BADGE */
+  .stock-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px}
+  .stock-ok{background:#dcfce7;color:#16a34a}
+  .stock-low{background:#fef3c7;color:#d97706}
+  .stock-empty{background:#fee2e2;color:#dc2626}
+  .stock-unlimited{background:#ede9fe;color:#7c3aed}
+  /* STOK di tabel produk */
+  .table-head{display:grid;grid-template-columns:48px 1fr 100px 100px 80px 80px 100px;gap:12px;padding:12px 16px;background:#f9f9f9;font-size:12px;font-weight:600;color:#888;border-bottom:1px solid #e5e5e5}
+  .table-row{display:grid;grid-template-columns:48px 1fr 100px 100px 80px 80px 100px;gap:12px;padding:12px 16px;align-items:center;border-bottom:1px solid #f5f5f5;font-size:13px;transition:background .15s}
+  .table-row:hover{background:#fffbeb}
+  .table-row:last-child{border-bottom:none}
   /* ULASAN */
   .review-panel{background:#fff;border:1px solid #e5e5e5;border-radius:12px;overflow:hidden;margin-top:14px}
   .review-panel-head{padding:14px 16px;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center}
@@ -88,11 +99,6 @@ body{font-family:system-ui,sans-serif;background:#f5f5f5;color:#1a1a1a}
   .review-prod{font-size:11px;color:#888;background:#f5f5f5;padding:2px 8px;border-radius:20px}
   .review-text{font-size:13px;color:#555;line-height:1.5}
   .review-date{font-size:11px;color:#bbb;margin-top:4px}
-  .star-big{font-size:32px;font-weight:700}
-  .star-sub{font-size:11px;color:#888;margin-top:2px}
-  .rbar-row{display:flex;align-items:center;gap:8px;font-size:12px;color:#888;margin-bottom:4px}
-  .rbar-track{flex:1;height:6px;background:#f0f0f0;border-radius:6px;overflow:hidden}
-  .rbar-fill{height:100%;background:#f59e0b}
 .section-title{font-size:16px;font-weight:600}
 .notif{position:fixed;bottom:24px;right:24px;background:#fff;border:1px solid #86efac;border-radius:8px;padding:10px 16px;font-size:13px;color:#16a34a;z-index:500;display:none;box-shadow:0 4px 16px rgba(0,0,0,.1)}
 .notif.show{display:block}
@@ -232,6 +238,7 @@ body{font-family:system-ui,sans-serif;background:#f5f5f5;color:#1a1a1a}
           <div>Nama Produk</div>
           <div>Kategori</div>
           <div>Harga</div>
+          <div>Stok</div>
           <div>Terjual</div>
           <div>Aksi</div>
         </div>
@@ -266,6 +273,16 @@ body{font-family:system-ui,sans-serif;background:#f5f5f5;color:#1a1a1a}
           <div class="form-row">
             <label>Harga (Rp)</label>
             <input type="number" id="sellerPrice" placeholder="150000">
+          </div>
+          <div class="form-row">
+            <label>Stok Produk</label>
+            <div style="display:flex;gap:10px;align-items:center">
+              <input type="number" id="sellerStock" placeholder="Jumlah stok" min="0" style="flex:1">
+              <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#555;white-space:nowrap;cursor:pointer">
+                <input type="checkbox" id="unlimitedStock" onchange="toggleUnlimitedStock(this)"> Tidak terbatas
+              </label>
+            </div>
+            <div style="font-size:11px;color:#aaa;margin-top:4px">Stok akan berkurang otomatis saat ada pembeli</div>
           </div>
           <div class="form-row">
             <label>Deskripsi Produk</label>
@@ -344,7 +361,7 @@ body{font-family:system-ui,sans-serif;background:#f5f5f5;color:#1a1a1a}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, getDocs, addDoc, deleteDoc, updateDoc, doc, query, where, serverTimestamp }
+import { getFirestore, collection, getDocs, addDoc, deleteDoc, updateDoc, doc, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, signOut, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -362,72 +379,13 @@ const app  = initializeApp(firebaseConfig);
 const db   = getFirestore(app);
 const auth = getAuth(app);
 
-const fmt    = n => 'Rp ' + Math.round(n).toLocaleString('id-ID');
+const fmt   = n => 'Rp ' + Math.round(n).toLocaleString('id-ID');
 const EMOJIS = {Elektronik:'📱',Fashion:'👕',Makanan:'🍕',Olahraga:'⚽',Rumah:'🏠'};
 
-let currentUser  = null;
-let myProducts   = [];
-let myReviews    = [];
+let currentUser = null;
+let myProducts  = [];
 
-/* =========================================================
-   NAVIGASI ANTAR HALAMAN
-   ========================================================= */
-const PAGES = ['dashboard','produk','tambah','ulasan'];
-
-function showPage(pageName, sourceEl){
-  PAGES.forEach(p=>{
-    const el = document.getElementById('page' + p.charAt(0).toUpperCase() + p.slice(1));
-    if (el) el.style.display = (p === pageName) ? '' : 'none';
-  });
-
-  // update sidenav (desktop)
-  document.querySelectorAll('.sidenav-item').forEach(item => item.classList.remove('active'));
-  if (sourceEl && sourceEl.classList && sourceEl.classList.contains('sidenav-item')) {
-    sourceEl.classList.add('active');
-  } else {
-    const idx = PAGES.indexOf(pageName);
-    const items = document.querySelectorAll('.sidenav-item');
-    if (items[idx]) items[idx].classList.add('active');
-  }
-
-  // update bottom nav (mobile)
-  document.querySelectorAll('.sbnav-item').forEach(item => item.classList.remove('active'));
-  const bnav = document.getElementById('sbnav-' + pageName);
-  if (bnav) bnav.classList.add('active');
-
-  if (pageName === 'tambah' && !document.getElementById('sellerForm').dataset.editId) {
-    document.getElementById('formTitle').textContent = '➕ Tambah Produk Baru';
-    document.getElementById('submitBtn').textContent = '✅ Publikasikan';
-    document.getElementById('cancelBtn').style.display = 'none';
-  }
-  if (pageName === 'ulasan') renderReviews();
-  if (pageName === 'produk') filterMyProducts();
-}
-
-function sellerNav(pageName, btn){
-  showPage(pageName, null);
-  document.querySelectorAll('.sbnav-item').forEach(item => item.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-}
-
-/* =========================================================
-   DROPDOWN USER
-   ========================================================= */
-function toggleDropdown(e){
-  if (e) e.stopPropagation();
-  document.getElementById('dropdown').classList.toggle('show');
-}
-document.addEventListener('click', () => {
-  document.getElementById('dropdown').classList.remove('show');
-});
-
-function logout(){
-  signOut(auth).then(()=>{ window.location.href = 'auth.html'; });
-}
-
-/* =========================================================
-   AUTH
-   ========================================================= */
+// ---- Auth ----
 onAuthStateChanged(auth, async user => {
   if (!user) { window.location.href='auth.html'; return; }
   currentUser = user;
@@ -436,375 +394,456 @@ onAuthStateChanged(auth, async user => {
   document.getElementById('userName').textContent   = name.split(' ')[0];
   document.getElementById('dropName').textContent   = name;
   document.getElementById('dropEmail').textContent  = user.email || '';
-
-  await loadProducts();
-  await loadReviews();
+  await loadMyProducts();
+  updateStats();
+  renderRecentProducts();
+  renderProductTable();
 });
 
-/* =========================================================
-   NOTIFIKASI
-   ========================================================= */
-let notifTimer = null;
-function showNotif(msg, isError){
-  const n = document.getElementById('notif');
-  n.textContent = msg;
-  n.classList.toggle('err', !!isError);
-  n.classList.add('show');
-  clearTimeout(notifTimer);
-  notifTimer = setTimeout(()=> n.classList.remove('show'), 2500);
-}
+window.logout = async () => { await signOut(auth); window.location.href='auth.html'; };
 
-/* =========================================================
-   PRODUK: load, render, filter
-   ========================================================= */
-async function loadProducts(){
-  try{
-    const q = query(collection(db,'products'), where('sellerId','==', currentUser.uid));
-    const snap = await getDocs(q);
-    myProducts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  } catch(err){
-    console.error(err);
+// ---- Load produk milik seller ini ----
+async function loadMyProducts() {
+  try {
+    // Load semua produk lalu filter by uid (hindari butuh Firestore index)
+    const snap = await getDocs(collection(db,'products'));
+    myProducts = snap.docs
+      .map(d => ({
+        id:      d.id,
+        name:    d.data().name    || '',
+        cat:     d.data().cat     || '',
+        price:   d.data().price   || 0,
+        desc:    d.data().desc    || '',
+        img:     d.data().img     || '',
+        rating:  d.data().rating  || 0,
+        sold:    d.data().sold    || 0,
+        reviews: d.data().reviews || [],
+        createdBy: d.data().createdBy || '',
+      }))
+      .filter(p => p.createdBy === currentUser.uid);
+    console.log('Produk saya:', myProducts.length);
+  } catch(e) {
+    console.warn('loadMyProducts error:', e.message);
     myProducts = [];
   }
-  renderStats();
-  renderRecentProducts();
-  filterMyProducts();
-  populateReviewProductFilter();
 }
 
-function renderStats(){
-  const totalProducts = myProducts.length;
-  const totalSold     = myProducts.reduce((s,p)=> s + (Number(p.sold)||0), 0);
-  const totalRevenue  = myProducts.reduce((s,p)=> s + (Number(p.sold)||0) * (Number(p.price)||0), 0);
-  const ratedProducts = myProducts.filter(p => Number(p.rating) > 0);
-  const avgRating     = ratedProducts.length
-    ? (ratedProducts.reduce((s,p)=> s + Number(p.rating), 0) / ratedProducts.length)
-    : 0;
-
-  document.getElementById('statProducts').textContent = totalProducts;
-  document.getElementById('statSold').textContent      = totalSold;
-  document.getElementById('statRating').textContent    = avgRating.toFixed(1);
-  document.getElementById('statRevenue').textContent   = fmt(totalRevenue);
+// ---- Stats ----
+function updateStats() {
+  const totalSold    = myProducts.reduce((s,p)=>s+(p.sold||0),0);
+  const avgRating    = myProducts.length ? (myProducts.reduce((s,p)=>s+(p.rating||0),0)/myProducts.length).toFixed(1) : '0.0';
+  const estRevenue   = myProducts.reduce((s,p)=>s+(p.price||0)*(p.sold||0),0);
+  document.getElementById('statProducts').textContent = myProducts.length;
+  document.getElementById('statSold').textContent     = totalSold.toLocaleString('id-ID');
+  document.getElementById('statRating').textContent   = avgRating;
+  document.getElementById('statRevenue').textContent  = fmt(estRevenue);
 }
 
-function productThumb(p){
-  return p.image
-    ? `<div class="prod-thumb"><img src="${p.image}" alt=""></div>`
-    : `<div class="prod-thumb">${EMOJIS[p.category] || '📦'}</div>`;
-}
-
-function renderRecentProducts(){
-  const wrap = document.getElementById('recentProducts');
-  if (!myProducts.length){
-    wrap.innerHTML = '<div class="empty-state">Belum ada produk.</div>';
+// ---- Render recent (dashboard) ----
+function renderRecentProducts() {
+  const el = document.getElementById('recentProducts');
+  if (!myProducts.length) {
+    el.innerHTML = '<div class="empty-state">Belum ada produk — klik Tambah Produk di sidebar.</div>';
     return;
   }
-  const recent = [...myProducts]
-    .sort((a,b)=> (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0))
-    .slice(0,5);
-
-  wrap.innerHTML = `<div class="product-table">
-    <div id="recentTableBody">
-      ${recent.map(p => productRowHtml(p)).join('')}
-    </div>
+  const recent = [...myProducts].slice(0,4);
+  el.innerHTML = `<div class="product-table">
+    <div class="table-head"><div>Foto</div><div>Nama</div><div>Kategori</div><div>Harga</div><div>Terjual</div><div>Aksi</div></div>
+    ${recent.map(p=>`
+    <div class="table-row">
+      <div class="prod-thumb">${p.img?`<img src="${p.img}" alt="${p.name}">`:(EMOJIS[p.cat]||'📦')}</div>
+      <div><div class="prod-name">${p.name}</div></div>
+      <div style="font-size:12px;color:#888">${p.cat}</div>
+      <div class="price-col">${fmt(p.price)}</div>
+      <div style="font-size:13px">${(p.sold||0).toLocaleString('id-ID')}</div>
+      <div class="action-btns">
+        <button class="btn-edit" onclick="editProduct('${p.id}')">✏️ Edit</button>
+        <button class="btn-del" onclick="deleteProduct('${p.id}')">🗑️</button>
+      </div>
+    </div>`).join('')}
   </div>`;
 }
 
-function productRowHtml(p){
-  return `<div class="table-row">
-    ${productThumb(p)}
-    <div>
-      <div class="prod-name">${escapeHtml(p.name||'-')}</div>
-      <div class="prod-cat">${escapeHtml(p.category||'-')}</div>
-    </div>
-    <div>${escapeHtml(p.category||'-')}</div>
-    <div class="price-col">${fmt(p.price||0)}</div>
-    <div>${p.sold||0}</div>
-    <div class="action-btns">
-      <button class="btn-edit" onclick="editProduct('${p.id}')">✏️ Edit</button>
-      <button class="btn-del" onclick="deleteProduct('${p.id}')">🗑️</button>
-    </div>
-  </div>`;
+// ---- Render tabel produk ----
+function renderProductTable() {
+  const el = document.getElementById('productTableBody');
+  if (!myProducts.length) { el.innerHTML='<div class="empty-state">Belum ada produk.</div>'; return; }
+  el.innerHTML = myProducts.map(p=>{
+    const stockBadge = p.stock === -1 || p.stock === undefined ?
+      '<span class="stock-badge stock-unlimited">∞ Bebas</span>' :
+      p.stock === 0 ? '<span class="stock-badge stock-empty">Habis</span>' :
+      p.stock <= 5 ? `<span class="stock-badge stock-low">⚠️ ${p.stock}</span>` :
+      `<span class="stock-badge stock-ok">${p.stock}</span>`;
+    return `
+    <div class="table-row">
+      <div class="prod-thumb">${p.img?`<img src="${p.img}" alt="${p.name}">`:(EMOJIS[p.cat]||'📦')}</div>
+      <div><div class="prod-name">${p.name}</div><div class="prod-cat">${p.cat}</div></div>
+      <div style="font-size:12px;color:#888">${p.cat}</div>
+      <div class="price-col">${fmt(p.price)}</div>
+      <div>${stockBadge}</div>
+      <div style="font-size:13px">${(p.sold||0).toLocaleString('id-ID')}</div>
+      <div class="action-btns">
+        <button class="btn-edit" onclick="editProduct('${p.id}')">✏️ Edit</button>
+        <button class="btn-del" onclick="deleteProduct('${p.id}')">🗑️</button>
+      </div>
+    </div>`;}).join('');
 }
 
-function filterMyProducts(){
-  const search = (document.getElementById('sellerSearch')?.value || '').toLowerCase();
-  const cat    = document.getElementById('sellerCatFilter')?.value || '';
-  const sort   = document.getElementById('sellerSortFilter')?.value || '';
-
-  let list = myProducts.filter(p=>{
-    const matchSearch = !search || (p.name||'').toLowerCase().includes(search);
-    const matchCat    = !cat || p.category === cat;
-    return matchSearch && matchCat;
+// ---- Page navigation ----
+window.showPage = function(page, el) {
+  // Sembunyikan semua page
+  ['Dashboard','Produk','Tambah','Ulasan'].forEach(p => {
+    const pageEl = document.getElementById('page'+p);
+    if (pageEl) pageEl.style.display = 'none';
   });
+  // Tampilkan page yang dipilih
+  const target = document.getElementById('page'+page.charAt(0).toUpperCase()+page.slice(1));
+  if (target) target.style.display = '';
 
-  if (sort === 'name')       list.sort((a,b)=> (a.name||'').localeCompare(b.name||''));
-  if (sort === 'price_low')  list.sort((a,b)=> (a.price||0) - (b.price||0));
-  if (sort === 'price_high') list.sort((a,b)=> (b.price||0) - (a.price||0));
-  if (sort === 'sold')       list.sort((a,b)=> (b.sold||0) - (a.sold||0));
-  if (sort === 'rating')     list.sort((a,b)=> (b.rating||0) - (a.rating||0));
+  // Sync sidenav
+  document.querySelectorAll('.sidenav-item').forEach(i=>i.classList.remove('active'));
+  if (el) el.classList.add('active');
 
-  const countEl = document.getElementById('sellerProductCount');
-  if (countEl) countEl.textContent = `${list.length} produk ditemukan`;
+  // Sync bottom nav mobile
+  document.querySelectorAll('.sbnav-item').forEach(b=>b.classList.remove('active'));
+  const bnavEl = document.getElementById('sbnav-'+page);
+  if (bnavEl) bnavEl.classList.add('active');
 
-  const body = document.getElementById('productTableBody');
-  body.innerHTML = list.length
-    ? list.map(p => productRowHtml(p)).join('')
-    : '<div class="empty-state">Belum ada produk.</div>';
-}
-
-/* =========================================================
-   FORM TAMBAH / EDIT PRODUK
-   ========================================================= */
-let pendingImageDataUrl = null;
-
-function handleUpload(input){
-  const file = input.files && input.files[0];
-  if (!file) return;
-  if (file.size > 5 * 1024 * 1024){
-    showNotif('Ukuran foto maksimal 5MB', true);
-    input.value = '';
-    return;
+  // Aksi per halaman
+  if (page === 'produk') {
+    filteredMyProducts = [...myProducts];
+    renderProductTable();
+    const countEl = document.getElementById('sellerProductCount');
+    if (countEl) countEl.textContent = myProducts.length + ' produk';
   }
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const img = new Image();
-    img.onload = () => {
-      const MAX_W = 800;
-      const scale = Math.min(1, MAX_W / img.width);
-      const canvas = document.createElement('canvas');
-      canvas.width  = img.width * scale;
-      canvas.height = img.height * scale;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      pendingImageDataUrl = canvas.toDataURL('image/jpeg', 0.75);
+  if (page === 'ulasan') loadAllReviews();
+  if (page === 'tambah') {
+    const editId = document.getElementById('sellerForm')?.dataset?.editId;
+    if (!editId) {
+      document.getElementById('formTitle').textContent = '➕ Tambah Produk Baru';
+      document.getElementById('submitBtn').textContent = '✅ Publikasikan';
+      document.getElementById('cancelBtn').style.display = 'none';
+    }
+  }
+};
 
-      const preview = document.getElementById('previewImg');
-      preview.src = pendingImageDataUrl;
-      preview.style.display = 'block';
+// ---- Upload foto ----
+window.handleUpload = function(input) {
+  const file=input.files[0]; if(!file) return;
+  if(file.size>5*1024*1024){showNotif('Max 5MB',true);return;}
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=new Image();
+    img.onload=()=>{
+      const canvas=document.createElement('canvas');
+      const MAX=600; let w=img.width,h=img.height;
+      if(w>MAX||h>MAX){if(w>h){h=Math.round(h*MAX/w);w=MAX;}else{w=Math.round(w*MAX/h);h=MAX;}}
+      canvas.width=w;canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      const compressed=canvas.toDataURL('image/jpeg',0.7);
+      document.getElementById('previewImg').src=compressed;
+      document.getElementById('previewImg').style.display='block';
+      document.getElementById('uploadArea').style.display='none';
+      showNotif('Foto berhasil diupload');
     };
-    img.src = e.target.result;
+    img.src=e.target.result;
   };
   reader.readAsDataURL(file);
-}
+};
 
-async function submitProduct(){
-  const name  = document.getElementById('sellerName').value.trim();
-  const cat   = document.getElementById('sellerCat').value;
-  const price = Number(document.getElementById('sellerPrice').value);
-  const desc  = document.getElementById('sellerDesc').value.trim();
-  const editId = document.getElementById('sellerForm').dataset.editId;
+// ---- Submit produk ----
+window.submitProduct = async function() {
+  const name      = document.getElementById('sellerName').value.trim();
+  const price     = +document.getElementById('sellerPrice').value;
+  const cat       = document.getElementById('sellerCat').value;
+  const desc      = document.getElementById('sellerDesc').value.trim();
+  const imgEl     = document.getElementById('previewImg');
+  const img       = imgEl.src?.startsWith('data:') ? imgEl.src : '';
+  const editId    = document.getElementById('sellerForm').dataset.editId;
+  const unlimited = document.getElementById('unlimitedStock')?.checked;
+  const stockVal  = document.getElementById('sellerStock').value;
+  const stock     = unlimited ? -1 : (stockVal === '' ? -1 : Math.max(0, +stockVal));
 
-  if (!name){ showNotif('Nama produk wajib diisi', true); return; }
-  if (!price || price <= 0){ showNotif('Harga produk tidak valid', true); return; }
+  if(!name||!price||!desc){showNotif('Isi semua kolom',true);return;}
 
-  const submitBtn = document.getElementById('submitBtn');
-  submitBtn.disabled = true;
-  submitBtn.textContent = 'Menyimpan...';
+  const btn=document.getElementById('submitBtn');
+  btn.textContent='Menyimpan...'; btn.disabled=true;
 
-  try{
-    if (editId){
-      const existing = myProducts.find(p => p.id === editId);
-      const updateData = {
-        name, category: cat, price, description: desc,
-      };
-      if (pendingImageDataUrl) updateData.image = pendingImageDataUrl;
-      await updateDoc(doc(db,'products', editId), updateData);
-      showNotif('Produk berhasil diperbarui');
+  try {
+    if(editId) {
+      // UPDATE
+      console.log('Update produk:', editId);
+      await updateDoc(doc(db,'products',editId),{name,cat,price,desc,img,stock});
+      const idx=myProducts.findIndex(p=>p.id===editId);
+      if(idx!==-1) myProducts[idx]={...myProducts[idx],name,cat,price,desc,img,stock};
+      showNotif('✅ Produk berhasil diupdate!');
+      cancelEdit();
     } else {
-      await addDoc(collection(db,'products'), {
-        name, category: cat, price, description: desc,
-        image: pendingImageDataUrl || '',
-        sold: 0, rating: 0,
-        sellerId: currentUser.uid,
+      // TAMBAH BARU
+      console.log('Tambah produk baru, uid:', currentUser.uid);
+      const docRef=await addDoc(collection(db,'products'),{
+        name,cat,price,desc,img,
+        stock,
+        rating:0,sold:0,reviews:[],
+        createdBy: currentUser.uid,
         createdAt: serverTimestamp()
       });
-      showNotif('Produk berhasil dipublikasikan');
+      console.log('Produk tersimpan:', docRef.id);
+      myProducts.unshift({id:docRef.id,name,cat,price,desc,img,rating:0,sold:0,reviews:[],createdBy:currentUser.uid});
+      showNotif('✅ Produk berhasil dipublikasikan!');
+      resetForm();
     }
-    resetForm();
-    await loadProducts();
-    showPage('produk', null);
-  } catch(err){
-    console.error(err);
-    showNotif('Gagal menyimpan produk', true);
+    updateStats();
+    renderRecentProducts();
+    renderProductTable();
+  } catch(e){
+    console.error('submitProduct error:', e);
+    if(e.code==='permission-denied'){
+      showNotif('❌ Akses ditolak — pastikan sudah login sebagai seller',true);
+    } else {
+      showNotif('❌ Gagal menyimpan: '+e.message,true);
+    }
   } finally {
-    submitBtn.disabled = false;
-    submitBtn.textContent = '✅ Publikasikan';
+    btn.textContent = editId ? '💾 Simpan Perubahan' : '✅ Publikasikan';
+    btn.disabled=false;
   }
-}
+};
 
-function editProduct(id){
-  const p = myProducts.find(x => x.id === id);
-  if (!p) return;
-  document.getElementById('sellerForm').dataset.editId = id;
-  document.getElementById('sellerName').value  = p.name || '';
-  document.getElementById('sellerCat').value   = p.category || 'Elektronik';
-  document.getElementById('sellerPrice').value = p.price || '';
-  document.getElementById('sellerDesc').value  = p.description || '';
-
-  const preview = document.getElementById('previewImg');
-  if (p.image){
-    preview.src = p.image;
-    preview.style.display = 'block';
+// ---- Edit produk ----
+window.editProduct = function(id) {
+  const p=myProducts.find(x=>x.id===id);
+  if(!p) return;
+  document.getElementById('sellerName').value  = p.name;
+  document.getElementById('sellerPrice').value = p.price;
+  document.getElementById('sellerCat').value   = p.cat;
+  document.getElementById('sellerDesc').value  = p.desc||'';
+  const unlimitedEl = document.getElementById('unlimitedStock');
+  const stockEl     = document.getElementById('sellerStock');
+  if (p.stock === -1 || p.stock === undefined) {
+    if (unlimitedEl) unlimitedEl.checked = true;
+    if (stockEl) { stockEl.value=''; stockEl.disabled=true; }
   } else {
-    preview.style.display = 'none';
+    if (unlimitedEl) unlimitedEl.checked = false;
+    if (stockEl) { stockEl.value=p.stock; stockEl.disabled=false; }
   }
-  pendingImageDataUrl = null;
-
-  document.getElementById('formTitle').textContent = '✏️ Edit Produk';
-  document.getElementById('submitBtn').textContent = '💾 Simpan Perubahan';
-  document.getElementById('cancelBtn').style.display = '';
-
+  if(p.img){
+    document.getElementById('previewImg').src=p.img;
+    document.getElementById('previewImg').style.display='block';
+    document.getElementById('uploadArea').style.display='none';
+  }
+  document.getElementById('sellerForm').dataset.editId = id;
+  document.getElementById('formTitle').textContent     = '✏️ Edit Produk';
+  document.getElementById('submitBtn').textContent     = '💾 Simpan Perubahan';
+  document.getElementById('cancelBtn').style.display  = '';
   showPage('tambah', null);
-}
+};
 
-async function deleteProduct(id){
-  if (!confirm('Yakin ingin menghapus produk ini?')) return;
-  try{
-    await deleteDoc(doc(db,'products', id));
-    showNotif('Produk dihapus');
-    await loadProducts();
-  } catch(err){
-    console.error(err);
-    showNotif('Gagal menghapus produk', true);
-  }
-}
-
-function cancelEdit(){
+window.cancelEdit = function() {
   resetForm();
-  showPage('produk', null);
-}
+  document.getElementById('formTitle').textContent    = '➕ Tambah Produk Baru';
+  document.getElementById('submitBtn').textContent    = '✅ Publikasikan';
+  document.getElementById('cancelBtn').style.display = 'none';
+};
 
-function resetForm(){
+function resetForm() {
   document.getElementById('sellerForm').dataset.editId = '';
   document.getElementById('sellerName').value  = '';
-  document.getElementById('sellerCat').value   = 'Elektronik';
   document.getElementById('sellerPrice').value = '';
   document.getElementById('sellerDesc').value  = '';
-  document.getElementById('previewImg').style.display = 'none';
-  document.getElementById('fileInput').value = '';
-  pendingImageDataUrl = null;
-  document.getElementById('formTitle').textContent = '➕ Tambah Produk Baru';
-  document.getElementById('submitBtn').textContent = '✅ Publikasikan';
-  document.getElementById('cancelBtn').style.display = 'none';
+  document.getElementById('previewImg').style.display='none';
+  document.getElementById('uploadArea').style.display='';
+  document.getElementById('fileInput').value='';
+  document.getElementById('submitBtn').disabled=false;
 }
 
-/* =========================================================
-   ULASAN PEMBELI
-   ========================================================= */
-async function loadReviews(){
-  try{
-    const q = query(collection(db,'reviews'), where('sellerId','==', currentUser.uid));
-    const snap = await getDocs(q);
-    myReviews = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  } catch(err){
-    console.error(err);
-    myReviews = [];
-  }
-  populateReviewProductFilter();
-  renderReviews();
+// ---- Hapus produk ----
+window.deleteProduct = async function(id) {
+  if(!confirm('Yakin hapus produk ini?')) return;
+  try {
+    await deleteDoc(doc(db,'products',id));
+    myProducts=myProducts.filter(p=>p.id!==id);
+    updateStats();
+    renderRecentProducts();
+    renderProductTable();
+    showNotif('Produk berhasil dihapus');
+  } catch(e) { showNotif('Gagal hapus: '+e.message,true); }
+};
+
+// ---- Filter Produk Seller ----
+let filteredMyProducts = [];
+
+window.filterMyProducts = function() {
+  const q    = (document.getElementById('sellerSearch')?.value||'').toLowerCase();
+  const cat  = document.getElementById('sellerCatFilter')?.value||'';
+  const sort = document.getElementById('sellerSortFilter')?.value||'';
+
+  filteredMyProducts = myProducts.filter(p =>
+    (p.name.toLowerCase().includes(q) || p.cat.toLowerCase().includes(q)) &&
+    (!cat || p.cat === cat)
+  );
+
+  if (sort==='name')       filteredMyProducts.sort((a,b)=>a.name.localeCompare(b.name));
+  else if (sort==='price_low')  filteredMyProducts.sort((a,b)=>a.price-b.price);
+  else if (sort==='price_high') filteredMyProducts.sort((a,b)=>b.price-a.price);
+  else if (sort==='sold')       filteredMyProducts.sort((a,b)=>b.sold-a.sold);
+  else if (sort==='rating')     filteredMyProducts.sort((a,b)=>b.rating-a.rating);
+
+  renderFilteredProducts();
+};
+
+function renderFilteredProducts() {
+  const el = document.getElementById('productTableBody');
+  const countEl = document.getElementById('sellerProductCount');
+  const list = filteredMyProducts.length > 0 ? filteredMyProducts : myProducts;
+
+  if (countEl) countEl.textContent = list.length + ' produk ditemukan';
+  if (!list.length) { el.innerHTML='<div class="empty-state">Produk tidak ditemukan</div>'; return; }
+
+  el.innerHTML = list.map(p=>`
+    <div class="table-row">
+      <div class="prod-thumb">${p.img?`<img src="${p.img}" alt="${p.name}">`:(EMOJIS[p.cat]||'📦')}</div>
+      <div><div class="prod-name">${p.name}</div><div class="prod-cat">${p.cat}</div></div>
+      <div style="font-size:12px;color:#888">${p.cat}</div>
+      <div class="price-col">${fmt(p.price)}</div>
+      <div style="font-size:13px">${(p.sold||0).toLocaleString('id-ID')}</div>
+      <div class="action-btns">
+        <button class="btn-edit" onclick="editProduct('${p.id}')">✏️ Edit</button>
+        <button class="btn-del" onclick="deleteProduct('${p.id}')">🗑️</button>
+      </div>
+    </div>`).join('');
 }
 
-function populateReviewProductFilter(){
-  const sel = document.getElementById('reviewFilterProd');
-  if (!sel) return;
-  const current = sel.value;
-  const names = [...new Set(myProducts.map(p => p.name).filter(Boolean))];
-  sel.innerHTML = '<option value="">Semua produk</option>' +
-    names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
-  sel.value = current;
-}
+// ---- Ulasan Pembeli ----
+let allReviews = [];
 
-function starString(rating){
-  const r = Math.round(Number(rating)||0);
-  return '⭐'.repeat(r) + '☆'.repeat(5 - r);
-}
-
-function renderReviews(){
-  const filterProd = document.getElementById('reviewFilterProd')?.value || '';
-  const filterStar  = document.getElementById('reviewFilterStar')?.value || '';
-
-  let list = myReviews.filter(r=>{
-    const matchProd = !filterProd || r.productName === filterProd;
-    const matchStar = !filterStar || Number(r.rating) === Number(filterStar);
-    return matchProd && matchStar;
+async function loadAllReviews() {
+  allReviews = [];
+  // Kumpulkan semua review dari produk seller
+  myProducts.forEach(p => {
+    (p.reviews||[]).forEach(r => {
+      allReviews.push({
+        ...r,
+        productId:   p.id,
+        productName: p.name,
+        productImg:  p.img||''
+      });
+    });
   });
 
-  document.getElementById('reviewCount').textContent = `${list.length} ulasan`;
+  // Juga load dari Firestore reviews collection kalau ada
+  try {
+    const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    const snap = await getDocs(collection(db,'reviews'));
+    snap.docs.forEach(d => {
+      const data = d.data();
+      const myProd = myProducts.find(p=>p.id===data.productId);
+      if (myProd) {
+        allReviews.push({
+          ...data,
+          id: d.id,
+          productName: myProd.name,
+          productImg:  myProd.img||''
+        });
+      }
+    });
+  } catch(e) { console.warn('load reviews:', e.message); }
 
-  // ringkasan rating keseluruhan (dari semua ulasan, tidak difilter)
-  const total = myReviews.length;
-  const avg   = total ? myReviews.reduce((s,r)=> s + Number(r.rating||0), 0) / total : 0;
-  document.getElementById('avgRatingStar').textContent = avg.toFixed(1);
-  document.getElementById('avgStars').textContent = starString(avg);
-  document.getElementById('totalReviewCount').textContent = `${total} ulasan`;
+  renderReviews(allReviews);
+  updateRatingStats(allReviews);
+  populateReviewProductFilter();
+}
 
-  const bars = document.getElementById('ratingBars');
-  bars.innerHTML = [5,4,3,2,1].map(star=>{
-    const count = myReviews.filter(r => Math.round(Number(r.rating)||0) === star).length;
-    const pct = total ? Math.round((count/total)*100) : 0;
-    return `<div class="rbar-row">
-      <span>${star}⭐</span>
-      <div class="rbar-track"><div class="rbar-fill" style="width:${pct}%"></div></div>
-      <span>${count}</span>
-    </div>`;
-  }).join('');
-
-  const listEl = document.getElementById('reviewListSeller');
-  if (!list.length){
-    listEl.innerHTML = '<div class="empty-state">Belum ada ulasan.</div>';
+function renderReviews(reviews) {
+  const el = document.getElementById('reviewListSeller');
+  if (!reviews.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:30px">Belum ada ulasan untuk produk kamu.</div>';
     return;
   }
-  listEl.innerHTML = list.map(r => `
+  const stars = r => '★'.repeat(Math.round(r||0))+'☆'.repeat(5-Math.round(r||0));
+  el.innerHTML = reviews.map(r => `
     <div class="review-row">
-      <div class="review-avatar">${(r.authorName||'?').charAt(0).toUpperCase()}</div>
+      <div class="review-avatar">${(r.author||'U').charAt(0).toUpperCase()}</div>
       <div class="review-content">
         <div class="review-meta">
-          <span class="review-author-name">${escapeHtml(r.authorName||'Pembeli')}</span>
-          <span class="review-stars">${starString(r.rating)}</span>
-          ${r.productName ? `<span class="review-prod">${escapeHtml(r.productName)}</span>` : ''}
+          <span class="review-author-name">${r.author||'Anonim'}</span>
+          <span class="review-stars">${stars(r.rating||0)}</span>
+          <span class="review-prod">📦 ${r.productName||''}</span>
         </div>
-        <div class="review-text">${escapeHtml(r.text||'')}</div>
-        <div class="review-date">${formatDate(r.createdAt)}</div>
+        <div class="review-text">${r.text||r.comment||'-'}</div>
+        <div class="review-date">${r.date||''}</div>
       </div>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 
-function filterReviews(){ renderReviews(); }
+function updateRatingStats(reviews) {
+  const el      = document.getElementById('avgRatingStar');
+  const elStars = document.getElementById('avgStars');
+  const elCount = document.getElementById('totalReviewCount');
+  const barsEl  = document.getElementById('ratingBars');
+  if (!el) return;
 
-/* =========================================================
-   HELPER
-   ========================================================= */
-function escapeHtml(str){
-  return String(str)
-    .replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
-    .replaceAll('"','&quot;').replaceAll("'",'&#039;');
-}
-function formatDate(ts){
-  if (!ts || !ts.seconds) return '';
-  const d = new Date(ts.seconds * 1000);
-  return d.toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric' });
+  const total = reviews.length;
+  const avg   = total ? (reviews.reduce((s,r)=>s+(r.rating||0),0)/total).toFixed(1) : '0.0';
+  const stars = r => '★'.repeat(Math.round(r))+'☆'.repeat(5-Math.round(r));
+
+  el.textContent      = avg;
+  elStars.textContent = stars(Math.round(+avg));
+  elCount.textContent = total + ' ulasan';
+  document.getElementById('reviewCount').textContent = total + ' ulasan';
+
+  // Bar per bintang
+  const counts = [5,4,3,2,1].map(s=>reviews.filter(r=>Math.round(r.rating||0)===s).length);
+  barsEl.innerHTML = [5,4,3,2,1].map((s,i)=>`
+    <div class="rating-bar-row">
+      <span class="rating-bar-label">${s}</span>
+      <div class="rating-bar-bg"><div class="rating-bar-fill" style="width:${total?(counts[i]/total*100):0}%"></div></div>
+      <span class="rating-bar-count">${counts[i]}</span>
+    </div>`).join('');
 }
 
-/* =========================================================
-   EXPOSE KE GLOBAL SCOPE
-   (WAJIB — karena semua onclick="..." di HTML memanggil
-   fungsi dari scope global, sedangkan <script type="module">
-   membuat semua fungsi ini lokal ke module. Tanpa baris di
-   bawah ini, semua tombol tidak akan merespons.)
-   ========================================================= */
-window.showPage        = showPage;
-window.sellerNav       = sellerNav;
-window.toggleDropdown  = toggleDropdown;
-window.logout          = logout;
-window.handleUpload    = handleUpload;
-window.submitProduct   = submitProduct;
-window.editProduct     = editProduct;
-window.deleteProduct   = deleteProduct;
-window.cancelEdit      = cancelEdit;
-window.filterMyProducts= filterMyProducts;
-window.filterReviews   = filterReviews;
+function populateReviewProductFilter() {
+  const sel = document.getElementById('reviewFilterProd');
+  if (!sel) return;
+  const opts = myProducts.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+  sel.innerHTML = '<option value="">Semua produk</option>' + opts;
+}
+
+window.filterReviews = function() {
+  const prodId   = document.getElementById('reviewFilterProd')?.value||'';
+  const starFilter = +document.getElementById('reviewFilterStar')?.value||0;
+  let filtered = [...allReviews];
+  if (prodId) filtered = filtered.filter(r=>r.productId===prodId);
+  if (starFilter) filtered = filtered.filter(r=>Math.round(r.rating||0)===starFilter);
+  renderReviews(filtered);
+};
+
+// ---- Helpers ----
+window.toggleUnlimitedStock = function(cb) {
+  const stockEl = document.getElementById('sellerStock');
+  if (cb.checked) {
+    stockEl.value = '';
+    stockEl.disabled = true;
+    stockEl.placeholder = 'Tidak terbatas';
+  } else {
+    stockEl.disabled = false;
+    stockEl.placeholder = 'Jumlah stok';
+  }
+};
+
+window.showNotif = (msg,err=false) => {
+  const n=document.getElementById('notif');
+  n.textContent=msg; n.className='notif'+(err?' err':'');
+  n.classList.add('show'); setTimeout(()=>n.classList.remove('show'),3000);
+};
+// ---- SELLER BOTTOM NAV (mobile) ----
+window.sellerNav = function(page, el) {
+  document.querySelectorAll('.sbnav-item').forEach(b=>b.classList.remove('active'));
+  if (el) el.classList.add('active');
+  window.showPage(page, null);
+};
+
+window.toggleDropdown = e=>{e.stopPropagation();document.getElementById('dropdown').classList.toggle('show');};
+document.addEventListener('click',()=>document.getElementById('dropdown').classList.remove('show'));
 </script>
 </body>
 </html>
