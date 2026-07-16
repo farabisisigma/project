@@ -8,6 +8,79 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,sans-serif;background:#f0f2f5;color:#1a1a1a}
 
+/* DARK MODE */
+:root {
+  --bg-primary: #f0f2f5;
+  --bg-card: #ffffff;
+  --bg-secondary: #f8f8f8;
+  --border: #e5e5e5;
+  --text-primary: #1a1a1a;
+  --text-secondary: #555;
+  --text-muted: #888;
+  --text-faint: #aaa;
+  --input-bg: #fafafa;
+  --shadow: rgba(0,0,0,.1);
+}
+[data-theme="dark"] {
+  --bg-primary: #0f0f13;
+  --bg-card: #1a1a24;
+  --bg-secondary: #14141c;
+  --border: #2a2a3a;
+  --text-primary: #f0f0f5;
+  --text-secondary: #b0b0c0;
+  --text-muted: #7070a0;
+  --text-faint: #5050a0;
+  --input-bg: #1e1e2e;
+  --shadow: rgba(0,0,0,.4);
+}
+[data-theme="dark"] body { background: var(--bg-primary); color: var(--text-primary); }
+[data-theme="dark"] .sidebar,
+[data-theme="dark"] .product-card,
+[data-theme="dark"] .panel,
+[data-theme="dark"] .modal,
+[data-theme="dark"] .drawer,
+[data-theme="dark"] .dropdown,
+[data-theme="dark"] .profile-card,
+[data-theme="dark"] .order-card,
+[data-theme="dark"] .review-panel { background: var(--bg-card); border-color: var(--border); color: var(--text-primary); }
+[data-theme="dark"] .product-img,
+[data-theme="dark"] .cart-thumb,
+[data-theme="dark"] .modal-img { background: var(--bg-secondary); }
+[data-theme="dark"] .product-name,
+[data-theme="dark"] .cart-name,
+[data-theme="dark"] .modal-name { color: var(--text-primary); }
+[data-theme="dark"] .product-meta,
+[data-theme="dark"] .cart-price,
+[data-theme="dark"] .review-text,
+[data-theme="dark"] .order-id,
+[data-theme="dark"] .order-date { color: var(--text-muted); }
+[data-theme="dark"] .sidebar select,
+[data-theme="dark"] .search-bar input,
+[data-theme="dark"] .profile-field input,
+[data-theme="dark"] .drawer select,
+[data-theme="dark"] .drawer input,
+[data-theme="dark"] #reviewComment { background: var(--input-bg); border-color: var(--border); color: var(--text-primary); }
+[data-theme="dark"] .panel-head,
+[data-theme="dark"] .modal-head,
+[data-theme="dark"] .panel-foot { border-color: var(--border); background: var(--bg-card); }
+[data-theme="dark"] .cart-item,
+[data-theme="dark"] .review-item { border-color: var(--border); }
+[data-theme="dark"] .pay-opt { background: var(--input-bg); border-color: var(--border); color: var(--text-primary); }
+[data-theme="dark"] .pay-opt.selected { background: #1e1e4f; border-color: #4f46e5; color: #818cf8; }
+[data-theme="dark"] .close-btn:hover { background: var(--bg-secondary); }
+[data-theme="dark"] .dropdown-item:hover { background: var(--bg-secondary); }
+[data-theme="dark"] .dropdown-head { border-color: var(--border); }
+[data-theme="dark"] .profile-banner { background: linear-gradient(135deg,#312e81,#4c1d95); }
+[data-theme="dark"] .modal-desc { color: var(--text-secondary); }
+[data-theme="dark"] .section-title { color: var(--text-primary); }
+[data-theme="dark"] .add-btn.loading { background: #2a2a3a; color: var(--text-muted); }
+[data-theme="dark"] .qty-btn { background: var(--bg-secondary); border-color: var(--border); color: var(--text-primary); }
+[data-theme="dark"] .review-row { border-color: var(--border); }
+
+/* DARK MODE TOGGLE BUTTON */
+.dark-toggle{background:none;border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:5px 10px;cursor:pointer;font-size:16px;color:#fff;display:flex;align-items:center;gap:5px;transition:all .2s}
+.dark-toggle:hover{background:rgba(255,255,255,.1)}
+
 /* NAVBAR */
 .navbar{background:#1e1b4b;padding:11px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;border-bottom:1px solid #312e81}
 .logo-wrap{display:flex;align-items:center;gap:9px;flex:1}
@@ -210,6 +283,7 @@ input[type=range]{width:100%;accent-color:#4f46e5;margin-bottom:6px}
     </div>
   </div>
   <div class="search-bar"><input type="text" placeholder="Cari produk..." id="searchInput" oninput="filterProducts()"></div>
+  <button class="dark-toggle" id="darkToggle" onclick="toggleDarkMode()" title="Ganti tema">🌙</button>
   <button class="nav-btn" onclick="openPanel('cart')">🛒 Keranjang <span class="cart-count" id="cartCount">0</span></button>
   <div class="user-chip" onclick="toggleDropdown(event)">
     <div class="user-avatar" id="userAvatar"><span id="userInit">?</span></div>
@@ -878,6 +952,26 @@ function renderOrdersWithReview() {
       </div>
     </div>`).join('');
 }
+
+// ---- DARK MODE ----
+function initDarkMode() {
+  const saved = localStorage.getItem('theme') || 'light';
+  applyTheme(saved);
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const btn = document.getElementById('darkToggle');
+  if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+  localStorage.setItem('theme', theme);
+}
+
+window.toggleDarkMode = function() {
+  const current = document.documentElement.getAttribute('data-theme') || 'light';
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+};
+
+initDarkMode();
 
 window.showNotif = (msg,err=false)=>{
   const n=document.getElementById('notif');
