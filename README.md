@@ -139,6 +139,6 @@ Project ini dibuat untuk keperluan pembelajaran dan pengembangan portofolio.
 
 ## 👨‍💻 Author
 
-**Nama:** : farabi&rafael
+**Nama:** : farabi
 
 Website: https://tokokustore.netlify.app/
